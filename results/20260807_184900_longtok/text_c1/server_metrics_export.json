@@ -1,0 +1,3990 @@
+{
+  "schema_version": "1.1",
+  "aiperf_version": "0.12.0",
+  "benchmark_id": "c8d1994d3c11",
+  "summary": {
+    "endpoints_configured": [
+      "http://localhost:8000/metrics"
+    ],
+    "endpoints_successful": [
+      "http://localhost:8000/metrics"
+    ],
+    "start_time": "2026-08-08T01:49:30.888978",
+    "end_time": "2026-08-08T01:56:02.465029",
+    "endpoint_info": {
+      "http://localhost:8000/metrics": {
+        "total_fetches": 1246,
+        "first_fetch_ns": 1786153747211987133,
+        "last_fetch_ns": 1786154162487479599,
+        "avg_fetch_latency_ms": 6.479691125200643,
+        "unique_updates": 1244,
+        "first_update_ns": 1786153747211987133,
+        "last_update_ns": 1786154162471137256,
+        "duration_seconds": 415.259150123,
+        "avg_update_interval_ms": 334.0781577819791,
+        "median_update_interval_ms": 333.54679
+      }
+    },
+    "phase_time_ranges": {
+      "profiling": {
+        "start_ns": 1786153770888977863,
+        "end_ns": 1786154162465029405
+      },
+      "warmup": {
+        "start_ns": 1786153749292668878,
+        "end_ns": 1786153770912351394
+      }
+    }
+  },
+  "metrics_phase": "profiling",
+  "metrics": {
+    "http_request_duration_highr_seconds": {
+      "type": "histogram",
+      "description": "Latency with many buckets but no API specific labels. Made for more accurate percentile calculations.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "count": 50,
+            "sum": 391.36646142600057,
+            "avg": 7.827329228520012,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.9994671092110575,
+            "p1_estimate": 2.5355859068031803,
+            "p5_estimate": 3.95744062307729,
+            "p10_estimate": 4.404074996933054,
+            "p25_estimate": 6.12510288703047,
+            "p50_estimate": 7.775621108286073,
+            "p75_estimate": 9.307534530696069,
+            "p90_estimate": 10.784361266862724,
+            "p95_estimate": 12.458207575413779,
+            "p99_estimate": 14.653654611482352
+          },
+          "buckets": {
+            "0.01": 0,
+            "0.025": 0,
+            "0.05": 0,
+            "0.075": 0,
+            "0.1": 0,
+            "0.25": 0,
+            "0.5": 0,
+            "0.75": 0,
+            "1.0": 0,
+            "1.5": 0,
+            "2.0": 0,
+            "2.5": 1,
+            "3.0": 2,
+            "3.5": 2,
+            "4.0": 3,
+            "4.5": 6,
+            "5.0": 6,
+            "7.5": 22,
+            "10.0": 42,
+            "30.0": 50,
+            "60.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "http_request_duration_seconds": {
+      "type": "histogram",
+      "description": "Latency with only few buckets by handler. Made to be only used if aggregation by handler is important.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "handler": "/v1/chat/completions",
+            "method": "POST"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 391.36646142600057,
+            "avg": 7.827329228520012,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.9994671092110575,
+            "p1_estimate": 1.1365465845704001,
+            "p5_estimate": 1.6827329228520014,
+            "p10_estimate": 2.3654658457040023,
+            "p25_estimate": 4.413664614260006,
+            "p50_estimate": 7.8273292285200124,
+            "p75_estimate": 11.240993842780018,
+            "p90_estimate": 13.289192611336022,
+            "p95_estimate": 13.971925534188022,
+            "p99_estimate": 14.518111872469623
+          },
+          "buckets": {
+            "0.1": 0,
+            "0.5": 0,
+            "1.0": 0,
+            "+Inf": 50
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "handler": "/v1/models",
+            "method": "GET"
+          },
+          "stats": {
+            "count": 0
+          },
+          "buckets": {
+            "0.1": 0,
+            "0.5": 0,
+            "1.0": 0,
+            "+Inf": 0
+          }
+        }
+      ]
+    },
+    "http_requests": {
+      "type": "counter",
+      "description": "Total number of requests by method, status and handler.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "handler": "/v1/chat/completions",
+            "method": "POST",
+            "status": "2xx"
+          },
+          "stats": {
+            "total": 50.0,
+            "rate": 0.1276894174285341
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "handler": "/v1/models",
+            "method": "GET",
+            "status": "2xx"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "process_cpu_seconds": {
+      "type": "counter",
+      "description": "Total user and system CPU time spent in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "total": 25.659999999999997,
+            "rate": 0.06553020902432369
+          }
+        }
+      ]
+    },
+    "process_max_fds": {
+      "type": "gauge",
+      "description": "Maximum number of open file descriptors.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 65535.0,
+            "min": 65535.0,
+            "max": 65535.0,
+            "std": 0.0,
+            "p1": 65535.0,
+            "p5": 65535.0,
+            "p10": 65535.0,
+            "p25": 65535.0,
+            "p50": 65535.0,
+            "p75": 65535.0,
+            "p90": 65535.0,
+            "p95": 65535.0,
+            "p99": 65535.0
+          }
+        }
+      ]
+    },
+    "process_open_fds": {
+      "type": "gauge",
+      "description": "Number of open file descriptors.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 55.0,
+            "min": 55.0,
+            "max": 55.0,
+            "std": 0.0,
+            "p1": 55.0,
+            "p5": 55.0,
+            "p10": 55.0,
+            "p25": 55.0,
+            "p50": 55.0,
+            "p75": 55.0,
+            "p90": 55.0,
+            "p95": 55.0,
+            "p99": 55.0
+          }
+        }
+      ]
+    },
+    "process_resident_memory_bytes": {
+      "type": "gauge",
+      "description": "Resident memory size in bytes.",
+      "unit": "bytes",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 4182265153.033135,
+            "min": 4180193280.0,
+            "max": 4183306240.0,
+            "std": 1195346.8548491187,
+            "p1": 4180193280.0,
+            "p5": 4180193280.0,
+            "p10": 4180848640.0,
+            "p25": 4180848640.0,
+            "p50": 4183306240.0,
+            "p75": 4183306240.0,
+            "p90": 4183306240.0,
+            "p95": 4183306240.0,
+            "p99": 4183306240.0
+          }
+        }
+      ]
+    },
+    "process_start_time_seconds": {
+      "type": "gauge",
+      "description": "Start time of the process since unix epoch in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 1786150761.3999999,
+            "min": 1786150761.4,
+            "max": 1786150761.4,
+            "std": 2.3851992600480134e-7,
+            "p1": 1786150761.4,
+            "p5": 1786150761.4,
+            "p10": 1786150761.4,
+            "p25": 1786150761.4,
+            "p50": 1786150761.4,
+            "p75": 1786150761.4,
+            "p90": 1786150761.4,
+            "p95": 1786150761.4,
+            "p99": 1786150761.4
+          }
+        }
+      ]
+    },
+    "process_virtual_memory_bytes": {
+      "type": "gauge",
+      "description": "Virtual memory size in bytes.",
+      "unit": "bytes",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 34641752495.524216,
+            "min": 34641752064.0,
+            "max": 34641768448.0,
+            "std": 2624.830130810784,
+            "p1": 34641752064.0,
+            "p5": 34641752064.0,
+            "p10": 34641752064.0,
+            "p25": 34641752064.0,
+            "p50": 34641752064.0,
+            "p75": 34641752064.0,
+            "p90": 34641752064.0,
+            "p95": 34641752064.0,
+            "p99": 34641768448.0
+          }
+        }
+      ]
+    },
+    "python_gc_collections": {
+      "type": "counter",
+      "description": "Number of times this generation was collected",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "0"
+          },
+          "stats": {
+            "total": 9.0,
+            "rate": 0.02298409513713614
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "1"
+          },
+          "stats": {
+            "total": 1.0,
+            "rate": 0.002553788348570682
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "2"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "python_gc_objects_collected": {
+      "type": "counter",
+      "description": "Objects collected during gc",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "0"
+          },
+          "stats": {
+            "total": 1521.0,
+            "rate": 3.884312078176007
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "1"
+          },
+          "stats": {
+            "total": 193.0,
+            "rate": 0.4928811512741416
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "2"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "python_gc_objects_uncollectable": {
+      "type": "counter",
+      "description": "Uncollectable objects found during GC",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "0"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "1"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "2"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "python_info": {
+      "type": "gauge",
+      "description": "Python platform information",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "implementation": "CPython",
+            "major": "3",
+            "minor": "12",
+            "patchlevel": "3",
+            "version": "3.12.3"
+          },
+          "stats": {
+            "avg": 1.0,
+            "min": 1.0,
+            "max": 1.0,
+            "std": 0.0,
+            "p1": 1.0,
+            "p5": 1.0,
+            "p10": 1.0,
+            "p25": 1.0,
+            "p50": 1.0,
+            "p75": 1.0,
+            "p90": 1.0,
+            "p95": 1.0,
+            "p99": 1.0
+          }
+        }
+      ]
+    },
+    "vllm:cache_config_info": {
+      "type": "gauge",
+      "description": "Information of the LLMEngine CacheConfig",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "_block_size_resolved": "True",
+            "block_size": "2096",
+            "cache_dtype": "fp8_e4m3",
+            "calculate_kv_scales": "False",
+            "enable_prefix_caching": "True",
+            "engine": "0",
+            "gpu_memory_utilization": "0.4",
+            "hash_block_size": "None",
+            "is_attention_free": "False",
+            "kv_cache_dtype_skip_layers": "[]",
+            "kv_cache_max_concurrency": "8.212121212121213",
+            "kv_cache_memory_bytes": "None",
+            "kv_cache_size_tokens": "2152758",
+            "kv_offloading_backend": "native",
+            "kv_offloading_size": "None",
+            "kv_sharing_fast_prefill": "False",
+            "mamba_block_size": "16",
+            "mamba_cache_dtype": "auto",
+            "mamba_cache_mode": "align",
+            "mamba_page_size_padded": "None",
+            "mamba_ssm_cache_dtype": "float32",
+            "num_cpu_blocks": "None",
+            "num_gpu_blocks": "1084",
+            "num_gpu_blocks_override": "None",
+            "prefix_caching_hash_algo": "sha256",
+            "sliding_window": "None",
+            "user_specified_block_size": "False",
+            "user_specified_mamba_block_size": "False"
+          },
+          "stats": {
+            "avg": 1.0,
+            "min": 1.0,
+            "max": 1.0,
+            "std": 0.0,
+            "p1": 1.0,
+            "p5": 1.0,
+            "p10": 1.0,
+            "p25": 1.0,
+            "p50": 1.0,
+            "p75": 1.0,
+            "p90": 1.0,
+            "p95": 1.0,
+            "p99": 1.0
+          }
+        }
+      ]
+    },
+    "vllm:e2e_request_latency_seconds": {
+      "type": "histogram",
+      "description": "Histogram of e2e request latency in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 391.3079650402069,
+            "avg": 7.826159300804139,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.9993177218225842,
+            "p1_estimate": 2.471284732055664,
+            "p5_estimate": 3.6760114784240727,
+            "p10_estimate": 4.761849685668945,
+            "p25_estimate": 6.018210443357627,
+            "p50_estimate": 7.842159635122911,
+            "p75_estimate": 9.39707401569611,
+            "p90_estimate": 10.923588904738427,
+            "p95_estimate": 12.36041818037629,
+            "p99_estimate": 14.114174236804246
+          },
+          "buckets": {
+            "0.3": 0,
+            "0.5": 0,
+            "0.8": 0,
+            "1.0": 0,
+            "1.5": 0,
+            "2.0": 0,
+            "2.5": 1,
+            "5.0": 6,
+            "10.0": 42,
+            "15.0": 50,
+            "20.0": 50,
+            "30.0": 50,
+            "40.0": 50,
+            "50.0": 50,
+            "60.0": 50,
+            "120.0": 50,
+            "240.0": 50,
+            "480.0": 50,
+            "960.0": 50,
+            "1920.0": 50,
+            "7680.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:engine_sleep_state": {
+      "type": "gauge",
+      "description": "Engine sleep state; awake = 0 means engine is sleeping; awake = 1 means engine is awake; weights_offloaded = 1 means sleep level 1; discard_all = 1 means sleep level 2.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "sleep_state": "awake"
+          },
+          "stats": {
+            "avg": 1.0,
+            "min": 1.0,
+            "max": 1.0,
+            "std": 0.0,
+            "p1": 1.0,
+            "p5": 1.0,
+            "p10": 1.0,
+            "p25": 1.0,
+            "p50": 1.0,
+            "p75": 1.0,
+            "p90": 1.0,
+            "p95": 1.0,
+            "p99": 1.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "sleep_state": "discard_all"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "sleep_state": "weights_offloaded"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:estimated_flops_per_gpu": {
+      "type": "counter",
+      "description": "Estimated number of floating point operations per GPU (for Model Flops Utilization calculations).",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:estimated_read_bytes_per_gpu": {
+      "type": "counter",
+      "description": "Estimated number of bytes read from memory per GPU (for Model Flops Utilization calculations).",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:estimated_write_bytes_per_gpu": {
+      "type": "counter",
+      "description": "Estimated number of bytes written to memory per GPU (for Model Flops Utilization calculations).",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:external_prefix_cache_hits": {
+      "type": "counter",
+      "description": "External prefix cache hits from KV connector cross-instance cache sharing, in terms of number of cached tokens.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:external_prefix_cache_queries": {
+      "type": "counter",
+      "description": "External prefix cache queries from KV connector cross-instance cache sharing, in terms of number of queried tokens.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:generation_tokens": {
+      "type": "counter",
+      "description": "Number of generation tokens processed.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 25994.0,
+            "rate": 66.38317433274631
+          }
+        }
+      ]
+    },
+    "vllm:inter_token_latency_seconds": {
+      "type": "histogram",
+      "description": "Histogram of inter-token latency in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 25944,
+            "sum": 381.15122725999663,
+            "avg": 0.014691305398550595,
+            "count_rate": 66.25548491531777,
+            "sum_rate": 0.9733795632199955,
+            "p1_estimate": 0.011652078885730582,
+            "p5_estimate": 0.011899680701142992,
+            "p10_estimate": 0.012209182970408504,
+            "p25_estimate": 0.01313768977820504,
+            "p50_estimate": 0.014685201124532601,
+            "p75_estimate": 0.01623271247086016,
+            "p90_estimate": 0.017161219278656697,
+            "p95_estimate": 0.017470721547922213,
+            "p99_estimate": 0.01771832336333462
+          },
+          "buckets": {
+            "0.01": 0,
+            "0.025": 25943,
+            "0.05": 25943,
+            "0.075": 25943,
+            "0.1": 25943,
+            "0.15": 25943,
+            "0.2": 25944,
+            "0.3": 25944,
+            "0.4": 25944,
+            "0.5": 25944,
+            "0.75": 25944,
+            "1.0": 25944,
+            "2.5": 25944,
+            "5.0": 25944,
+            "7.5": 25944,
+            "10.0": 25944,
+            "20.0": 25944,
+            "40.0": 25944,
+            "80.0": 25944,
+            "+Inf": 25944
+          }
+        }
+      ]
+    },
+    "vllm:iteration_tokens_total": {
+      "type": "histogram",
+      "description": "Histogram of number of tokens per engine_step.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 25994,
+            "sum": 69050.0,
+            "avg": 2.656382242055859,
+            "count_rate": 66.38317433274631,
+            "sum_rate": 176.3390854688056,
+            "p1_estimate": 0.07269990908640105,
+            "p5_estimate": 0.11277545641911767,
+            "p10_estimate": 0.16286989058501344,
+            "p25_estimate": 0.3131531930827008,
+            "p50_estimate": 0.5636253639121795,
+            "p75_estimate": 0.8140975347416585,
+            "p90_estimate": 0.9643808372393459,
+            "p95_estimate": 1.0,
+            "p99_estimate": 1.0
+          },
+          "buckets": {
+            "1.0": 25944,
+            "8.0": 25944,
+            "16.0": 25944,
+            "32.0": 25959,
+            "64.0": 25959,
+            "128.0": 25959,
+            "256.0": 25959,
+            "512.0": 25964,
+            "1024.0": 25974,
+            "2048.0": 25989,
+            "4096.0": 25994,
+            "8192.0": 25994,
+            "16384.0": 25994,
+            "+Inf": 25994
+          }
+        }
+      ]
+    },
+    "vllm:kv_cache_usage_perc": {
+      "type": "gauge",
+      "description": "KV-cache usage. 1 means 100 percent usage.",
+      "unit": "ratio",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "avg": 0.0038440688763001804,
+            "min": 0.0,
+            "max": 0.005540166204986097,
+            "std": 0.0008089742891008674,
+            "p1": 0.0,
+            "p5": 0.003693444136657398,
+            "p10": 0.003693444136657398,
+            "p25": 0.003693444136657398,
+            "p50": 0.003693444136657398,
+            "p75": 0.003693444136657398,
+            "p90": 0.004616805170821747,
+            "p95": 0.004616805170821747,
+            "p99": 0.005540166204986097
+          }
+        }
+      ]
+    },
+    "vllm:mm_cache_hits": {
+      "type": "counter",
+      "description": "Multi-modal cache hits, in terms of number of cached items.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:mm_cache_queries": {
+      "type": "counter",
+      "description": "Multi-modal cache queries, in terms of number of queried items.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:num_preemptions": {
+      "type": "counter",
+      "description": "Cumulative number of preemption from the engine.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:num_requests_running": {
+      "type": "gauge",
+      "description": "Number of requests in model execution batches.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "avg": 0.9719626168224299,
+            "min": 0.0,
+            "max": 1.0,
+            "std": 0.16514981436969192,
+            "p1": 0.0,
+            "p5": 1.0,
+            "p10": 1.0,
+            "p25": 1.0,
+            "p50": 1.0,
+            "p75": 1.0,
+            "p90": 1.0,
+            "p95": 1.0,
+            "p99": 1.0
+          }
+        }
+      ]
+    },
+    "vllm:num_requests_waiting": {
+      "type": "gauge",
+      "description": "Number of requests waiting to be processed.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:num_requests_waiting_by_reason": {
+      "type": "gauge",
+      "description": "Number of waiting requests by reason. Reason labels: 'capacity' = waiting for scheduling capacity; 'deferred' = deferred by transient constraints (LoRA budget, KV transfer, blocked status). Sum of all reasons equals vllm:num_requests_waiting.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "reason": "capacity"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "reason": "deferred"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:prefix_cache_hits": {
+      "type": "counter",
+      "description": "Prefix cache hits, in terms of number of cached tokens.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 14672.0,
+            "rate": 37.469182650229044
+          }
+        }
+      ]
+    },
+    "vllm:prefix_cache_queries": {
+      "type": "counter",
+      "description": "Prefix cache queries, in terms of number of queried tokens.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 57728.0,
+            "rate": 147.42509378628833
+          }
+        }
+      ]
+    },
+    "vllm:prompt_tokens": {
+      "type": "counter",
+      "description": "Number of prefill tokens processed.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 57728.0,
+            "rate": 147.42509378628833
+          }
+        }
+      ]
+    },
+    "vllm:prompt_tokens_by_source": {
+      "type": "counter",
+      "description": "Number of prompt tokens by source.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "source": "external_kv_transfer"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "source": "local_cache_hit"
+          },
+          "stats": {
+            "total": 14672.0,
+            "rate": 37.469182650229044
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "source": "local_compute"
+          },
+          "stats": {
+            "total": 43056.0,
+            "rate": 109.95591113605929
+          }
+        }
+      ]
+    },
+    "vllm:prompt_tokens_cached": {
+      "type": "counter",
+      "description": "Number of cached prompt tokens (local + external).",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 14672.0,
+            "rate": 37.469182650229044
+          }
+        }
+      ]
+    },
+    "vllm:request_decode_time_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time spent in DECODE phase for request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 381.15122725999663,
+            "avg": 7.623024545199932,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.9733795632199955,
+            "p1_estimate": 2.2526333935182694,
+            "p5_estimate": 3.523924989350318,
+            "p10_estimate": 4.515634433619772,
+            "p25_estimate": 5.937817558106538,
+            "p50_estimate": 7.729280653140064,
+            "p75_estimate": 9.19082764451373,
+            "p90_estimate": 10.054954982580709,
+            "p95_estimate": 11.77229352303915,
+            "p99_estimate": 13.956094607512696
+          },
+          "buckets": {
+            "0.3": 0,
+            "0.5": 0,
+            "0.8": 0,
+            "1.0": 0,
+            "1.5": 0,
+            "2.0": 1,
+            "2.5": 1,
+            "5.0": 7,
+            "10.0": 45,
+            "15.0": 50,
+            "20.0": 50,
+            "30.0": 50,
+            "40.0": 50,
+            "50.0": 50,
+            "60.0": 50,
+            "120.0": 50,
+            "240.0": 50,
+            "480.0": 50,
+            "960.0": 50,
+            "1920.0": 50,
+            "7680.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_generation_tokens": {
+      "type": "histogram",
+      "description": "Number of generation tokens processed.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 25994.0,
+            "avg": 519.88,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 66.38317433274631,
+            "p1_estimate": 149.95400816784786,
+            "p5_estimate": 208.46510903169056,
+            "p10_estimate": 255.08799739468654,
+            "p25_estimate": 393.0177026101061,
+            "p50_estimate": 503.9727510778595,
+            "p75_estimate": 639.7556180079093,
+            "p90_estimate": 815.0475654307037,
+            "p95_estimate": 873.4782145716351,
+            "p99_estimate": 920.2227338843803
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 0,
+            "50.0": 0,
+            "100.0": 0,
+            "200.0": 2,
+            "500.0": 23,
+            "1000.0": 50,
+            "2000.0": 50,
+            "5000.0": 50,
+            "10000.0": 50,
+            "20000.0": 50,
+            "50000.0": 50,
+            "100000.0": 50,
+            "200000.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_inference_time_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time spent in RUNNING phase for request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 391.0225180619991,
+            "avg": 7.820450361239982,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.9985887506555023,
+            "p1_estimate": 2.4672070745589427,
+            "p5_estimate": 3.6711283600118443,
+            "p10_estimate": 4.760347187695952,
+            "p25_estimate": 6.016225974270839,
+            "p50_estimate": 7.837161712978408,
+            "p75_estimate": 9.39567753744985,
+            "p90_estimate": 10.918970372125006,
+            "p95_estimate": 12.355177922218754,
+            "p99_estimate": 14.112415641693751
+          },
+          "buckets": {
+            "0.3": 0,
+            "0.5": 0,
+            "0.8": 0,
+            "1.0": 0,
+            "1.5": 0,
+            "2.0": 0,
+            "2.5": 1,
+            "5.0": 6,
+            "10.0": 42,
+            "15.0": 50,
+            "20.0": 50,
+            "30.0": 50,
+            "40.0": 50,
+            "50.0": 50,
+            "60.0": 50,
+            "120.0": 50,
+            "240.0": 50,
+            "480.0": 50,
+            "960.0": 50,
+            "1920.0": 50,
+            "7680.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_max_num_generation_tokens": {
+      "type": "histogram",
+      "description": "Histogram of maximum number of requested generation tokens.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 25994.0,
+            "avg": 519.88,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 66.38317433274631,
+            "p1_estimate": 149.95400816784786,
+            "p5_estimate": 208.46510903169056,
+            "p10_estimate": 255.08799739468654,
+            "p25_estimate": 393.0177026101061,
+            "p50_estimate": 503.9727510778595,
+            "p75_estimate": 639.7556180079093,
+            "p90_estimate": 815.0475654307037,
+            "p95_estimate": 873.4782145716351,
+            "p99_estimate": 920.2227338843803
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 0,
+            "50.0": 0,
+            "100.0": 0,
+            "200.0": 2,
+            "500.0": 23,
+            "1000.0": 50,
+            "2000.0": 50,
+            "5000.0": 50,
+            "10000.0": 50,
+            "20000.0": 50,
+            "50000.0": 50,
+            "100000.0": 50,
+            "200000.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_params_max_tokens": {
+      "type": "histogram",
+      "description": "Histogram of the max_tokens request parameter.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 25994.0,
+            "avg": 519.88,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 66.38317433274631,
+            "p1_estimate": 149.95400816784786,
+            "p5_estimate": 208.46510903169056,
+            "p10_estimate": 255.08799739468654,
+            "p25_estimate": 393.0177026101061,
+            "p50_estimate": 503.9727510778595,
+            "p75_estimate": 639.7556180079093,
+            "p90_estimate": 815.0475654307037,
+            "p95_estimate": 873.4782145716351,
+            "p99_estimate": 920.2227338843803
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 0,
+            "50.0": 0,
+            "100.0": 0,
+            "200.0": 2,
+            "500.0": 23,
+            "1000.0": 50,
+            "2000.0": 50,
+            "5000.0": 50,
+            "10000.0": 50,
+            "20000.0": 50,
+            "50000.0": 50,
+            "100000.0": 50,
+            "200000.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_params_n": {
+      "type": "histogram",
+      "description": "Histogram of the n request parameter.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 50.0,
+            "avg": 1.0,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.1276894174285341,
+            "p1_estimate": 0.41980000000000006,
+            "p5_estimate": 0.459,
+            "p10_estimate": 0.508,
+            "p25_estimate": 0.655,
+            "p50_estimate": 0.9,
+            "p75_estimate": 1.0,
+            "p90_estimate": 1.0,
+            "p95_estimate": 1.0,
+            "p99_estimate": 1.0
+          },
+          "buckets": {
+            "1.0": 50,
+            "2.0": 50,
+            "5.0": 50,
+            "10.0": 50,
+            "20.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_prefill_kv_computed_tokens": {
+      "type": "histogram",
+      "description": "Histogram of new KV tokens computed during prefill (excluding cached tokens).",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 43056.0,
+            "avg": 861.12,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 109.95591113605929,
+            "p1_estimate": 14.573459439280704,
+            "p5_estimate": 17.113380697902713,
+            "p10_estimate": 18.67917492863848,
+            "p25_estimate": 26.594495629307858,
+            "p50_estimate": 682.7407151985861,
+            "p75_estimate": 1406.841746958325,
+            "p90_estimate": 2004.801565588892,
+            "p95_estimate": 2229.6118294301773,
+            "p99_estimate": 2701.139203105635
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 7,
+            "50.0": 15,
+            "100.0": 15,
+            "200.0": 15,
+            "500.0": 19,
+            "1000.0": 30,
+            "2000.0": 44,
+            "5000.0": 50,
+            "10000.0": 50,
+            "20000.0": 50,
+            "50000.0": 50,
+            "100000.0": 50,
+            "200000.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_prefill_time_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time spent in PREFILL phase for request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 9.871290802002477,
+            "avg": 0.19742581604004955,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.025209187435506868,
+            "p1_estimate": 0.0037707800772116304,
+            "p5_estimate": 0.018337542320951535,
+            "p10_estimate": 0.03654599512562644,
+            "p25_estimate": 0.0911713535396511,
+            "p50_estimate": 0.18507676509619636,
+            "p75_estimate": 0.28249603953436037,
+            "p90_estimate": 0.37672223175320324,
+            "p95_estimate": 0.44014714271516997,
+            "p99_estimate": 0.48964194704741665
+          },
+          "buckets": {
+            "0.3": 39,
+            "0.5": 49,
+            "0.8": 50,
+            "1.0": 50,
+            "1.5": 50,
+            "2.0": 50,
+            "2.5": 50,
+            "5.0": 50,
+            "10.0": 50,
+            "15.0": 50,
+            "20.0": 50,
+            "30.0": 50,
+            "40.0": 50,
+            "50.0": 50,
+            "60.0": 50,
+            "120.0": 50,
+            "240.0": 50,
+            "480.0": 50,
+            "960.0": 50,
+            "1920.0": 50,
+            "7680.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_prompt_tokens": {
+      "type": "histogram",
+      "description": "Number of prefill tokens processed.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 57728.0,
+            "avg": 1154.56,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 147.42509378628833,
+            "p1_estimate": 14.239584598961494,
+            "p5_estimate": 16.7795058575835,
+            "p10_estimate": 18.34530008831927,
+            "p25_estimate": 26.122734381957102,
+            "p50_estimate": 810.7652406521723,
+            "p75_estimate": 1766.8275446283287,
+            "p90_estimate": 2824.196320056336,
+            "p95_estimate": 3733.9359894778217,
+            "p99_estimate": 4461.727725015013
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 7,
+            "50.0": 15,
+            "100.0": 15,
+            "200.0": 15,
+            "500.0": 19,
+            "1000.0": 27,
+            "2000.0": 39,
+            "5000.0": 50,
+            "10000.0": 50,
+            "20000.0": 50,
+            "50000.0": 50,
+            "100000.0": 50,
+            "200000.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_queue_time_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time spent in WAITING phase for request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 0.0007936689962662058,
+            "avg": 0.000015873379925324117,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 2.0268626352864243e-6,
+            "p1_estimate": 0.0,
+            "p5_estimate": 0.000016542690883309596,
+            "p10_estimate": 0.000016542690883309596,
+            "p25_estimate": 0.000016542690883309596,
+            "p50_estimate": 0.000016542690883309596,
+            "p75_estimate": 0.000016542690883309596,
+            "p90_estimate": 0.000016542690883309596,
+            "p95_estimate": 0.000016542690883309596,
+            "p99_estimate": 0.000016542690883309596
+          },
+          "buckets": {
+            "0.3": 50,
+            "0.5": 50,
+            "0.8": 50,
+            "1.0": 50,
+            "1.5": 50,
+            "2.0": 50,
+            "2.5": 50,
+            "5.0": 50,
+            "10.0": 50,
+            "15.0": 50,
+            "20.0": 50,
+            "30.0": 50,
+            "40.0": 50,
+            "50.0": 50,
+            "60.0": 50,
+            "120.0": 50,
+            "240.0": 50,
+            "480.0": 50,
+            "960.0": 50,
+            "1920.0": 50,
+            "7680.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:request_success": {
+      "type": "counter",
+      "description": "Count of successfully processed requests.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "abort",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "error",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "length",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 50.0,
+            "rate": 0.1276894174285341
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "repetition",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "stop",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:request_time_per_output_token_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time_per_output_token_seconds per request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 0.7349709151182253,
+            "avg": 0.014699418302364507,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.0018769601595672555,
+            "p1_estimate": 0.012017761174640791,
+            "p5_estimate": 0.012034201633722772,
+            "p10_estimate": 0.012054752207575249,
+            "p25_estimate": 0.01262861308031493,
+            "p50_estimate": 0.014568865949577313,
+            "p75_estimate": 0.016509118818839694,
+            "p90_estimate": 0.017673270540397124,
+            "p95_estimate": 0.018061321114249598,
+            "p99_estimate": 0.01837176157333158
+          },
+          "buckets": {
+            "0.01": 0,
+            "0.025": 50,
+            "0.05": 50,
+            "0.075": 50,
+            "0.1": 50,
+            "0.15": 50,
+            "0.2": 50,
+            "0.3": 50,
+            "0.4": 50,
+            "0.5": 50,
+            "0.75": 50,
+            "1.0": 50,
+            "2.5": 50,
+            "5.0": 50,
+            "7.5": 50,
+            "10.0": 50,
+            "20.0": 50,
+            "40.0": 50,
+            "80.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:time_to_first_token_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time to first token in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 50,
+            "sum": 10.182025671005249,
+            "avg": 0.20364051342010497,
+            "count_rate": 0.1276894174285341,
+            "sum_rate": 0.026002738523460786,
+            "p1_estimate": 0.05586837393841454,
+            "p5_estimate": 0.06,
+            "p10_estimate": 0.06125804840007499,
+            "p25_estimate": 0.07217952959220766,
+            "p50_estimate": 0.18448858804374765,
+            "p75_estimate": 0.2885632706756097,
+            "p90_estimate": 0.40272909933201495,
+            "p95_estimate": 0.4520830646107298,
+            "p99_estimate": 0.4990551456243249
+          },
+          "buckets": {
+            "0.001": 0,
+            "0.005": 0,
+            "0.01": 0,
+            "0.02": 0,
+            "0.04": 0,
+            "0.06": 2,
+            "0.08": 15,
+            "0.1": 15,
+            "0.25": 33,
+            "0.5": 49,
+            "0.75": 50,
+            "1.0": 50,
+            "2.5": 50,
+            "5.0": 50,
+            "7.5": 50,
+            "10.0": 50,
+            "20.0": 50,
+            "40.0": 50,
+            "80.0": 50,
+            "160.0": 50,
+            "640.0": 50,
+            "2560.0": 50,
+            "+Inf": 50
+          }
+        }
+      ]
+    },
+    "vllm:tool_call_parser_invocations": {
+      "type": "counter",
+      "description": "Total number of ToolParser invocations. Non-streaming increments once per choice; streaming increments once per delta.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "chat_completions"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "other"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "responses"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "chat_completions"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "other"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "responses"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "chat_completions"
+          },
+          "stats": {
+            "total": 29.0,
+            "rate": 0.07405986210854977
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "other"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "responses"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "chat_completions"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "other"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "responses"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    }
+  },
+  "warmup_metrics": {
+    "http_request_duration_highr_seconds": {
+      "type": "histogram",
+      "description": "Latency with many buckets but no API specific labels. Made for more accurate percentile calculations.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "count": 3,
+            "sum": 21.578799675000482,
+            "avg": 7.192933225000161,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.9104838827523573,
+            "p1_estimate": 4.5308249353800605,
+            "p5_estimate": 4.7517340769000835,
+            "p10_estimate": 5.027870503800114,
+            "p25_estimate": 5.856279784500202,
+            "p50_estimate": 7.2369619190003505,
+            "p75_estimate": 8.551601012500214,
+            "p90_estimate": 9.340384468600131,
+            "p95_estimate": 9.603312287300104,
+            "p99_estimate": 9.813654542260084
+          },
+          "buckets": {
+            "0.01": 0,
+            "0.025": 0,
+            "0.05": 0,
+            "0.075": 0,
+            "0.1": 0,
+            "0.25": 0,
+            "0.5": 0,
+            "0.75": 0,
+            "1.0": 0,
+            "1.5": 0,
+            "2.0": 0,
+            "2.5": 0,
+            "3.0": 0,
+            "3.5": 0,
+            "4.0": 0,
+            "4.5": 1,
+            "5.0": 1,
+            "7.5": 2,
+            "10.0": 3,
+            "30.0": 3,
+            "60.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "http_request_duration_seconds": {
+      "type": "histogram",
+      "description": "Latency with only few buckets by handler. Made to be only used if aggregation by handler is important.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "handler": "/v1/chat/completions",
+            "method": "POST"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 21.578799675000482,
+            "avg": 7.192933225000161,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.9104838827523573,
+            "p1_estimate": 1.1238586645000033,
+            "p5_estimate": 1.6192933225000161,
+            "p10_estimate": 2.2385866450000322,
+            "p25_estimate": 4.09646661250008,
+            "p50_estimate": 7.192933225000161,
+            "p75_estimate": 10.289399837500241,
+            "p90_estimate": 12.14727980500029,
+            "p95_estimate": 12.766573127500305,
+            "p99_estimate": 13.262007785500318
+          },
+          "buckets": {
+            "0.1": 0,
+            "0.5": 0,
+            "1.0": 0,
+            "+Inf": 3
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "handler": "/v1/models",
+            "method": "GET"
+          },
+          "stats": {
+            "count": 0
+          },
+          "buckets": {
+            "0.1": 0,
+            "0.5": 0,
+            "1.0": 0,
+            "+Inf": 0
+          }
+        }
+      ]
+    },
+    "http_requests": {
+      "type": "counter",
+      "description": "Total number of requests by method, status and handler.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "handler": "/v1/chat/completions",
+            "method": "POST",
+            "status": "2xx"
+          },
+          "stats": {
+            "total": 3.0,
+            "rate": 0.12658033298402224
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "handler": "/v1/models",
+            "method": "GET",
+            "status": "2xx"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "process_cpu_seconds": {
+      "type": "counter",
+      "description": "Total user and system CPU time spent in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "total": 1.4699999999999989,
+            "rate": 0.062024363162170845
+          }
+        }
+      ]
+    },
+    "process_max_fds": {
+      "type": "gauge",
+      "description": "Maximum number of open file descriptors.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 65535.0,
+            "min": 65535.0,
+            "max": 65535.0,
+            "std": 0.0,
+            "p1": 65535.0,
+            "p5": 65535.0,
+            "p10": 65535.0,
+            "p25": 65535.0,
+            "p50": 65535.0,
+            "p75": 65535.0,
+            "p90": 65535.0,
+            "p95": 65535.0,
+            "p99": 65535.0
+          }
+        }
+      ]
+    },
+    "process_open_fds": {
+      "type": "gauge",
+      "description": "Number of open file descriptors.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 53.98529411764706,
+            "min": 52.0,
+            "max": 55.0,
+            "std": 0.32289026179014957,
+            "p1": 52.67,
+            "p5": 54.0,
+            "p10": 54.0,
+            "p25": 54.0,
+            "p50": 54.0,
+            "p75": 54.0,
+            "p90": 54.0,
+            "p95": 54.0,
+            "p99": 55.0
+          }
+        }
+      ]
+    },
+    "process_resident_memory_bytes": {
+      "type": "gauge",
+      "description": "Resident memory size in bytes.",
+      "unit": "bytes",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 4180193280.0,
+            "min": 4180193280.0,
+            "max": 4180193280.0,
+            "std": 0.0,
+            "p1": 4180193280.0,
+            "p5": 4180193280.0,
+            "p10": 4180193280.0,
+            "p25": 4180193280.0,
+            "p50": 4180193280.0,
+            "p75": 4180193280.0,
+            "p90": 4180193280.0,
+            "p95": 4180193280.0,
+            "p99": 4180193280.0
+          }
+        }
+      ]
+    },
+    "process_start_time_seconds": {
+      "type": "gauge",
+      "description": "Start time of the process since unix epoch in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 1786150761.3999996,
+            "min": 1786150761.4,
+            "max": 1786150761.4,
+            "std": 4.803824646988543e-7,
+            "p1": 1786150761.4,
+            "p5": 1786150761.4,
+            "p10": 1786150761.4,
+            "p25": 1786150761.4,
+            "p50": 1786150761.4,
+            "p75": 1786150761.4,
+            "p90": 1786150761.4,
+            "p95": 1786150761.4,
+            "p99": 1786150761.4
+          }
+        }
+      ]
+    },
+    "process_virtual_memory_bytes": {
+      "type": "gauge",
+      "description": "Virtual memory size in bytes.",
+      "unit": "bytes",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "stats": {
+            "avg": 34641752304.94118,
+            "min": 34641752064.0,
+            "max": 34641768448.0,
+            "std": 1986.85184029764,
+            "p1": 34641752064.0,
+            "p5": 34641752064.0,
+            "p10": 34641752064.0,
+            "p25": 34641752064.0,
+            "p50": 34641752064.0,
+            "p75": 34641752064.0,
+            "p90": 34641752064.0,
+            "p95": 34641752064.0,
+            "p99": 34641757470.72
+          }
+        }
+      ]
+    },
+    "python_gc_collections": {
+      "type": "counter",
+      "description": "Number of times this generation was collected",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "0"
+          },
+          "stats": {
+            "total": 1.0,
+            "rate": 0.04219344432800741
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "1"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "2"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "python_gc_objects_collected": {
+      "type": "counter",
+      "description": "Objects collected during gc",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "0"
+          },
+          "stats": {
+            "total": 163.0,
+            "rate": 6.877531425465207
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "1"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "2"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "python_gc_objects_uncollectable": {
+      "type": "counter",
+      "description": "Uncollectable objects found during GC",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "0"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "1"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "generation": "2"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "python_info": {
+      "type": "gauge",
+      "description": "Python platform information",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "implementation": "CPython",
+            "major": "3",
+            "minor": "12",
+            "patchlevel": "3",
+            "version": "3.12.3"
+          },
+          "stats": {
+            "avg": 1.0,
+            "min": 1.0,
+            "max": 1.0,
+            "std": 0.0,
+            "p1": 1.0,
+            "p5": 1.0,
+            "p10": 1.0,
+            "p25": 1.0,
+            "p50": 1.0,
+            "p75": 1.0,
+            "p90": 1.0,
+            "p95": 1.0,
+            "p99": 1.0
+          }
+        }
+      ]
+    },
+    "vllm:cache_config_info": {
+      "type": "gauge",
+      "description": "Information of the LLMEngine CacheConfig",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "_block_size_resolved": "True",
+            "block_size": "2096",
+            "cache_dtype": "fp8_e4m3",
+            "calculate_kv_scales": "False",
+            "enable_prefix_caching": "True",
+            "engine": "0",
+            "gpu_memory_utilization": "0.4",
+            "hash_block_size": "None",
+            "is_attention_free": "False",
+            "kv_cache_dtype_skip_layers": "[]",
+            "kv_cache_max_concurrency": "8.212121212121213",
+            "kv_cache_memory_bytes": "None",
+            "kv_cache_size_tokens": "2152758",
+            "kv_offloading_backend": "native",
+            "kv_offloading_size": "None",
+            "kv_sharing_fast_prefill": "False",
+            "mamba_block_size": "16",
+            "mamba_cache_dtype": "auto",
+            "mamba_cache_mode": "align",
+            "mamba_page_size_padded": "None",
+            "mamba_ssm_cache_dtype": "float32",
+            "num_cpu_blocks": "None",
+            "num_gpu_blocks": "1084",
+            "num_gpu_blocks_override": "None",
+            "prefix_caching_hash_algo": "sha256",
+            "sliding_window": "None",
+            "user_specified_block_size": "False",
+            "user_specified_mamba_block_size": "False"
+          },
+          "stats": {
+            "avg": 1.0,
+            "min": 1.0,
+            "max": 1.0,
+            "std": 0.0,
+            "p1": 1.0,
+            "p5": 1.0,
+            "p10": 1.0,
+            "p25": 1.0,
+            "p50": 1.0,
+            "p75": 1.0,
+            "p90": 1.0,
+            "p95": 1.0,
+            "p99": 1.0
+          }
+        }
+      ]
+    },
+    "vllm:e2e_request_latency_seconds": {
+      "type": "histogram",
+      "description": "Histogram of e2e request latency in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 21.575169324874878,
+            "avg": 7.191723108291626,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.9103307057764414,
+            "p1_estimate": 4.530786757469177,
+            "p5_estimate": 4.756881976127625,
+            "p10_estimate": 5.039500999450683,
+            "p25_estimate": 5.887358069419861,
+            "p50_estimate": 7.300453186035156,
+            "p75_estimate": 8.550453186035156,
+            "p90_estimate": 9.300453186035156,
+            "p95_estimate": 9.550453186035156,
+            "p99_estimate": 9.750453186035156
+          },
+          "buckets": {
+            "0.3": 0,
+            "0.5": 0,
+            "0.8": 0,
+            "1.0": 0,
+            "1.5": 0,
+            "2.0": 0,
+            "2.5": 0,
+            "5.0": 1,
+            "10.0": 3,
+            "15.0": 3,
+            "20.0": 3,
+            "30.0": 3,
+            "40.0": 3,
+            "50.0": 3,
+            "60.0": 3,
+            "120.0": 3,
+            "240.0": 3,
+            "480.0": 3,
+            "960.0": 3,
+            "1920.0": 3,
+            "7680.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:engine_sleep_state": {
+      "type": "gauge",
+      "description": "Engine sleep state; awake = 0 means engine is sleeping; awake = 1 means engine is awake; weights_offloaded = 1 means sleep level 1; discard_all = 1 means sleep level 2.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "sleep_state": "awake"
+          },
+          "stats": {
+            "avg": 1.0,
+            "min": 1.0,
+            "max": 1.0,
+            "std": 0.0,
+            "p1": 1.0,
+            "p5": 1.0,
+            "p10": 1.0,
+            "p25": 1.0,
+            "p50": 1.0,
+            "p75": 1.0,
+            "p90": 1.0,
+            "p95": 1.0,
+            "p99": 1.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "sleep_state": "discard_all"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "sleep_state": "weights_offloaded"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:estimated_flops_per_gpu": {
+      "type": "counter",
+      "description": "Estimated number of floating point operations per GPU (for Model Flops Utilization calculations).",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:estimated_read_bytes_per_gpu": {
+      "type": "counter",
+      "description": "Estimated number of bytes read from memory per GPU (for Model Flops Utilization calculations).",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:estimated_write_bytes_per_gpu": {
+      "type": "counter",
+      "description": "Estimated number of bytes written to memory per GPU (for Model Flops Utilization calculations).",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:external_prefix_cache_hits": {
+      "type": "counter",
+      "description": "External prefix cache hits from KV connector cross-instance cache sharing, in terms of number of cached tokens.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:external_prefix_cache_queries": {
+      "type": "counter",
+      "description": "External prefix cache queries from KV connector cross-instance cache sharing, in terms of number of queried tokens.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:generation_tokens": {
+      "type": "counter",
+      "description": "Number of generation tokens processed.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 1463.0,
+            "rate": 61.72900905187484
+          }
+        }
+      ]
+    },
+    "vllm:inter_token_latency_seconds": {
+      "type": "histogram",
+      "description": "Histogram of inter-token latency in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 1460,
+            "sum": 21.25104803800059,
+            "avg": 0.014555512354794924,
+            "count_rate": 61.60242871889082,
+            "sum_rate": 0.896654912303189,
+            "p1_estimate": 0.01146897263652428,
+            "p5_estimate": 0.011720935062505556,
+            "p10_estimate": 0.012035888094982154,
+            "p25_estimate": 0.012980747192411941,
+            "p50_estimate": 0.014555512354794924,
+            "p75_estimate": 0.016130277517177907,
+            "p90_estimate": 0.017075136614607696,
+            "p95_estimate": 0.017390089647084293,
+            "p99_estimate": 0.01764205207306557
+          },
+          "buckets": {
+            "0.01": 0,
+            "0.025": 1460,
+            "0.05": 1460,
+            "0.075": 1460,
+            "0.1": 1460,
+            "0.15": 1460,
+            "0.2": 1460,
+            "0.3": 1460,
+            "0.4": 1460,
+            "0.5": 1460,
+            "0.75": 1460,
+            "1.0": 1460,
+            "2.5": 1460,
+            "5.0": 1460,
+            "7.5": 1460,
+            "10.0": 1460,
+            "20.0": 1460,
+            "40.0": 1460,
+            "80.0": 1460,
+            "+Inf": 1460
+          }
+        }
+      ]
+    },
+    "vllm:iteration_tokens_total": {
+      "type": "histogram",
+      "description": "Histogram of number of tokens per engine_step.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 1463,
+            "sum": 2249.0,
+            "avg": 1.5372522214627478,
+            "count_rate": 61.72900905187484,
+            "sum_rate": 94.89305629368866,
+            "p1_estimate": 0.22659820260012217,
+            "p5_estimate": 0.2666529971206701,
+            "p10_estimate": 0.31672149027135504,
+            "p25_estimate": 0.46692696972340986,
+            "p50_estimate": 0.7172694354768345,
+            "p75_estimate": 0.9676119012302591,
+            "p90_estimate": 1.0,
+            "p95_estimate": 1.0,
+            "p99_estimate": 1.0
+          },
+          "buckets": {
+            "1.0": 1460,
+            "8.0": 1460,
+            "16.0": 1460,
+            "32.0": 1461,
+            "64.0": 1462,
+            "128.0": 1462,
+            "256.0": 1462,
+            "512.0": 1462,
+            "1024.0": 1463,
+            "2048.0": 1463,
+            "4096.0": 1463,
+            "8192.0": 1463,
+            "16384.0": 1463,
+            "+Inf": 1463
+          }
+        }
+      ]
+    },
+    "vllm:kv_cache_usage_perc": {
+      "type": "gauge",
+      "description": "KV-cache usage. 1 means 100 percent usage.",
+      "unit": "ratio",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "avg": 0.0034218673619031774,
+            "min": 0.0,
+            "max": 0.003693444136657398,
+            "std": 0.0009711693192153057,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.003693444136657398,
+            "p25": 0.003693444136657398,
+            "p50": 0.003693444136657398,
+            "p75": 0.003693444136657398,
+            "p90": 0.003693444136657398,
+            "p95": 0.003693444136657398,
+            "p99": 0.003693444136657398
+          }
+        }
+      ]
+    },
+    "vllm:mm_cache_hits": {
+      "type": "counter",
+      "description": "Multi-modal cache hits, in terms of number of cached items.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:mm_cache_queries": {
+      "type": "counter",
+      "description": "Multi-modal cache queries, in terms of number of queried items.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:num_preemptions": {
+      "type": "counter",
+      "description": "Cumulative number of preemption from the engine.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:num_requests_running": {
+      "type": "gauge",
+      "description": "Number of requests in model execution batches.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "avg": 0.9264705882352942,
+            "min": 0.0,
+            "max": 1.0,
+            "std": 0.2629440931775465,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 1.0,
+            "p25": 1.0,
+            "p50": 1.0,
+            "p75": 1.0,
+            "p90": 1.0,
+            "p95": 1.0,
+            "p99": 1.0
+          }
+        }
+      ]
+    },
+    "vllm:num_requests_waiting": {
+      "type": "gauge",
+      "description": "Number of requests waiting to be processed.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:num_requests_waiting_by_reason": {
+      "type": "gauge",
+      "description": "Number of waiting requests by reason. Reason labels: 'capacity' = waiting for scheduling capacity; 'deferred' = deferred by transient constraints (LoRA budget, KV transfer, blocked status). Sum of all reasons equals vllm:num_requests_waiting.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "reason": "capacity"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "reason": "deferred"
+          },
+          "stats": {
+            "avg": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "std": 0.0,
+            "p1": 0.0,
+            "p5": 0.0,
+            "p10": 0.0,
+            "p25": 0.0,
+            "p50": 0.0,
+            "p75": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:prefix_cache_hits": {
+      "type": "counter",
+      "description": "Prefix cache hits, in terms of number of cached tokens.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:prefix_cache_queries": {
+      "type": "counter",
+      "description": "Prefix cache queries, in terms of number of queried tokens.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 786.0,
+            "rate": 33.164047241813826
+          }
+        }
+      ]
+    },
+    "vllm:prompt_tokens": {
+      "type": "counter",
+      "description": "Number of prefill tokens processed.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 786.0,
+            "rate": 33.164047241813826
+          }
+        }
+      ]
+    },
+    "vllm:prompt_tokens_by_source": {
+      "type": "counter",
+      "description": "Number of prompt tokens by source.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "source": "external_kv_transfer"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "source": "local_cache_hit"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "source": "local_compute"
+          },
+          "stats": {
+            "total": 786.0,
+            "rate": 33.164047241813826
+          }
+        }
+      ]
+    },
+    "vllm:prompt_tokens_cached": {
+      "type": "counter",
+      "description": "Number of cached prompt tokens (local + external).",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:request_decode_time_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time spent in DECODE phase for request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 21.25104803800059,
+            "avg": 7.08368267933353,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.896654912303189,
+            "p1_estimate": 4.338269135360233,
+            "p5_estimate": 4.574815140800228,
+            "p10_estimate": 4.870497647600223,
+            "p25_estimate": 5.757545168000206,
+            "p50_estimate": 7.235957702000178,
+            "p75_estimate": 8.485957702000178,
+            "p90_estimate": 9.235957702000178,
+            "p95_estimate": 9.485957702000178,
+            "p99_estimate": 9.685957702000177
+          },
+          "buckets": {
+            "0.3": 0,
+            "0.5": 0,
+            "0.8": 0,
+            "1.0": 0,
+            "1.5": 0,
+            "2.0": 0,
+            "2.5": 0,
+            "5.0": 1,
+            "10.0": 3,
+            "15.0": 3,
+            "20.0": 3,
+            "30.0": 3,
+            "40.0": 3,
+            "50.0": 3,
+            "60.0": 3,
+            "120.0": 3,
+            "240.0": 3,
+            "480.0": 3,
+            "960.0": 3,
+            "1920.0": 3,
+            "7680.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_generation_tokens": {
+      "type": "histogram",
+      "description": "Number of generation tokens processed.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 1463.0,
+            "avg": 487.6666666666667,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 61.72900905187484,
+            "p1_estimate": 321.5,
+            "p5_estimate": 333.5,
+            "p10_estimate": 348.5,
+            "p25_estimate": 393.5,
+            "p50_estimate": 468.5,
+            "p75_estimate": 572.25,
+            "p90_estimate": 634.5,
+            "p95_estimate": 655.25,
+            "p99_estimate": 671.85
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 0,
+            "50.0": 0,
+            "100.0": 0,
+            "200.0": 0,
+            "500.0": 2,
+            "1000.0": 3,
+            "2000.0": 3,
+            "5000.0": 3,
+            "10000.0": 3,
+            "20000.0": 3,
+            "50000.0": 3,
+            "100000.0": 3,
+            "200000.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_inference_time_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time spent in RUNNING phase for request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 21.563113948000137,
+            "avg": 7.187704649333379,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.9098220479034238,
+            "p1_estimate": 4.525495515100638,
+            "p5_estimate": 4.751748191500565,
+            "p10_estimate": 5.034564037000473,
+            "p25_estimate": 5.883011573500198,
+            "p50_estimate": 7.29709080099974,
+            "p75_estimate": 8.54709080099974,
+            "p90_estimate": 9.29709080099974,
+            "p95_estimate": 9.54709080099974,
+            "p99_estimate": 9.74709080099974
+          },
+          "buckets": {
+            "0.3": 0,
+            "0.5": 0,
+            "0.8": 0,
+            "1.0": 0,
+            "1.5": 0,
+            "2.0": 0,
+            "2.5": 0,
+            "5.0": 1,
+            "10.0": 3,
+            "15.0": 3,
+            "20.0": 3,
+            "30.0": 3,
+            "40.0": 3,
+            "50.0": 3,
+            "60.0": 3,
+            "120.0": 3,
+            "240.0": 3,
+            "480.0": 3,
+            "960.0": 3,
+            "1920.0": 3,
+            "7680.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_max_num_generation_tokens": {
+      "type": "histogram",
+      "description": "Histogram of maximum number of requested generation tokens.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 1463.0,
+            "avg": 487.6666666666667,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 61.72900905187484,
+            "p1_estimate": 321.5,
+            "p5_estimate": 333.5,
+            "p10_estimate": 348.5,
+            "p25_estimate": 393.5,
+            "p50_estimate": 468.5,
+            "p75_estimate": 572.25,
+            "p90_estimate": 634.5,
+            "p95_estimate": 655.25,
+            "p99_estimate": 671.85
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 0,
+            "50.0": 0,
+            "100.0": 0,
+            "200.0": 0,
+            "500.0": 2,
+            "1000.0": 3,
+            "2000.0": 3,
+            "5000.0": 3,
+            "10000.0": 3,
+            "20000.0": 3,
+            "50000.0": 3,
+            "100000.0": 3,
+            "200000.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_params_max_tokens": {
+      "type": "histogram",
+      "description": "Histogram of the max_tokens request parameter.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 1463.0,
+            "avg": 487.6666666666667,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 61.72900905187484,
+            "p1_estimate": 321.5,
+            "p5_estimate": 333.5,
+            "p10_estimate": 348.5,
+            "p25_estimate": 393.5,
+            "p50_estimate": 468.5,
+            "p75_estimate": 572.25,
+            "p90_estimate": 634.5,
+            "p95_estimate": 655.25,
+            "p99_estimate": 671.85
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 0,
+            "50.0": 0,
+            "100.0": 0,
+            "200.0": 0,
+            "500.0": 2,
+            "1000.0": 3,
+            "2000.0": 3,
+            "5000.0": 3,
+            "10000.0": 3,
+            "20000.0": 3,
+            "50000.0": 3,
+            "100000.0": 3,
+            "200000.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_params_n": {
+      "type": "histogram",
+      "description": "Histogram of the n request parameter.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 3.0,
+            "avg": 1.0,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.12658033298402224,
+            "p1_estimate": 0.5733333333333334,
+            "p5_estimate": 0.6,
+            "p10_estimate": 0.6333333333333333,
+            "p25_estimate": 0.7333333333333334,
+            "p50_estimate": 0.9,
+            "p75_estimate": 0.95,
+            "p90_estimate": 0.98,
+            "p95_estimate": 0.99,
+            "p99_estimate": 0.998
+          },
+          "buckets": {
+            "1.0": 3,
+            "2.0": 3,
+            "5.0": 3,
+            "10.0": 3,
+            "20.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_prefill_kv_computed_tokens": {
+      "type": "histogram",
+      "description": "Histogram of new KV tokens computed during prefill (excluding cached tokens).",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 786.0,
+            "avg": 262.0,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 33.164047241813826,
+            "p1_estimate": 23.3,
+            "p5_estimate": 24.5,
+            "p10_estimate": 26.0,
+            "p25_estimate": 30.5,
+            "p50_estimate": 38.0,
+            "p75_estimate": 381.5,
+            "p90_estimate": 587.6,
+            "p95_estimate": 656.3,
+            "p99_estimate": 711.26
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 0,
+            "50.0": 2,
+            "100.0": 2,
+            "200.0": 2,
+            "500.0": 2,
+            "1000.0": 3,
+            "2000.0": 3,
+            "5000.0": 3,
+            "10000.0": 3,
+            "20000.0": 3,
+            "50000.0": 3,
+            "100000.0": 3,
+            "200000.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_prefill_time_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time spent in PREFILL phase for request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 0.3120659099995464,
+            "avg": 0.1040219699998488,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.013167135600234832,
+            "p1_estimate": 0.015626269599880376,
+            "p5_estimate": 0.02117410799987231,
+            "p10_estimate": 0.02810890599986223,
+            "p25_estimate": 0.048913299999831995,
+            "p50_estimate": 0.0835872899997816,
+            "p75_estimate": 0.148913299999832,
+            "p90_estimate": 0.18810890599986227,
+            "p95_estimate": 0.20117410799987231,
+            "p99_estimate": 0.2116262695998804
+          },
+          "buckets": {
+            "0.3": 3,
+            "0.5": 3,
+            "0.8": 3,
+            "1.0": 3,
+            "1.5": 3,
+            "2.0": 3,
+            "2.5": 3,
+            "5.0": 3,
+            "10.0": 3,
+            "15.0": 3,
+            "20.0": 3,
+            "30.0": 3,
+            "40.0": 3,
+            "50.0": 3,
+            "60.0": 3,
+            "120.0": 3,
+            "240.0": 3,
+            "480.0": 3,
+            "960.0": 3,
+            "1920.0": 3,
+            "7680.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_prompt_tokens": {
+      "type": "histogram",
+      "description": "Number of prefill tokens processed.",
+      "unit": "tokens",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 786.0,
+            "avg": 262.0,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 33.164047241813826,
+            "p1_estimate": 23.3,
+            "p5_estimate": 24.5,
+            "p10_estimate": 26.0,
+            "p25_estimate": 30.5,
+            "p50_estimate": 38.0,
+            "p75_estimate": 381.5,
+            "p90_estimate": 587.6,
+            "p95_estimate": 656.3,
+            "p99_estimate": 711.26
+          },
+          "buckets": {
+            "1.0": 0,
+            "2.0": 0,
+            "5.0": 0,
+            "10.0": 0,
+            "20.0": 0,
+            "50.0": 2,
+            "100.0": 2,
+            "200.0": 2,
+            "500.0": 2,
+            "1000.0": 3,
+            "2000.0": 3,
+            "5000.0": 3,
+            "10000.0": 3,
+            "20000.0": 3,
+            "50000.0": 3,
+            "100000.0": 3,
+            "200000.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_queue_time_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time spent in WAITING phase for request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 0.00003968300006818026,
+            "avg": 0.000013227666689393422,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 1.674362454145078e-6,
+            "p1_estimate": 0.000013227666689393422,
+            "p5_estimate": 0.000013227666689393422,
+            "p10_estimate": 0.000013227666689393422,
+            "p25_estimate": 0.000013227666689393422,
+            "p50_estimate": 0.000013227666689393422,
+            "p75_estimate": 0.000013227666689393422,
+            "p90_estimate": 0.000013227666689393422,
+            "p95_estimate": 0.000013227666689393422,
+            "p99_estimate": 0.000013227666689393422
+          },
+          "buckets": {
+            "0.3": 3,
+            "0.5": 3,
+            "0.8": 3,
+            "1.0": 3,
+            "1.5": 3,
+            "2.0": 3,
+            "2.5": 3,
+            "5.0": 3,
+            "10.0": 3,
+            "15.0": 3,
+            "20.0": 3,
+            "30.0": 3,
+            "40.0": 3,
+            "50.0": 3,
+            "60.0": 3,
+            "120.0": 3,
+            "240.0": 3,
+            "480.0": 3,
+            "960.0": 3,
+            "1920.0": 3,
+            "7680.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:request_success": {
+      "type": "counter",
+      "description": "Count of successfully processed requests.",
+      "unit": "requests",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "abort",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "error",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "length",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 3.0,
+            "rate": 0.12658033298402224
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "repetition",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "finished_reason": "stop",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    },
+    "vllm:request_time_per_output_token_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time_per_output_token_seconds per request.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 0.043699200855774833,
+            "avg": 0.014566400285258277,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.0018438197984865492,
+            "p1_estimate": 0.01221520983482138,
+            "p5_estimate": 0.012401244433295933,
+            "p10_estimate": 0.012633787681389124,
+            "p25_estimate": 0.0133314174256687,
+            "p50_estimate": 0.014494133666134657,
+            "p75_estimate": 0.015765249835286047,
+            "p90_estimate": 0.016527919536776882,
+            "p95_estimate": 0.016782142770607158,
+            "p99_estimate": 0.016985521357671382
+          },
+          "buckets": {
+            "0.01": 0,
+            "0.025": 3,
+            "0.05": 3,
+            "0.075": 3,
+            "0.1": 3,
+            "0.15": 3,
+            "0.2": 3,
+            "0.3": 3,
+            "0.4": 3,
+            "0.5": 3,
+            "0.75": 3,
+            "1.0": 3,
+            "2.5": 3,
+            "5.0": 3,
+            "7.5": 3,
+            "10.0": 3,
+            "20.0": 3,
+            "40.0": 3,
+            "80.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:time_to_first_token_seconds": {
+      "type": "histogram",
+      "description": "Histogram of time to first token in seconds.",
+      "unit": "seconds",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "engine": "0",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+          },
+          "stats": {
+            "count": 3,
+            "sum": 0.3247640132904053,
+            "avg": 0.10825467109680176,
+            "count_rate": 0.12658033298402224,
+            "sum_rate": 0.013702912314508974,
+            "p1_estimate": 0.060191325610817796,
+            "p5_estimate": 0.060956628054089,
+            "p10_estimate": 0.06191325610817801,
+            "p25_estimate": 0.06478314027044503,
+            "p50_estimate": 0.06956628054089006,
+            "p75_estimate": 0.13241805449273855,
+            "p90_estimate": 0.17012911886384766,
+            "p95_estimate": 0.18269947365421732,
+            "p99_estimate": 0.1927557574865131
+          },
+          "buckets": {
+            "0.001": 0,
+            "0.005": 0,
+            "0.01": 0,
+            "0.02": 0,
+            "0.04": 0,
+            "0.06": 0,
+            "0.08": 2,
+            "0.1": 2,
+            "0.25": 3,
+            "0.5": 3,
+            "0.75": 3,
+            "1.0": 3,
+            "2.5": 3,
+            "5.0": 3,
+            "7.5": 3,
+            "10.0": 3,
+            "20.0": 3,
+            "40.0": 3,
+            "80.0": 3,
+            "160.0": 3,
+            "640.0": 3,
+            "2560.0": 3,
+            "+Inf": 3
+          }
+        }
+      ]
+    },
+    "vllm:tool_call_parser_invocations": {
+      "type": "counter",
+      "description": "Total number of ToolParser invocations. Non-streaming increments once per choice; streaming increments once per delta.",
+      "series": [
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "chat_completions"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "other"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "responses"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "chat_completions"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "other"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "non_streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "responses"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "chat_completions"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "other"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "no_tool_call",
+            "request_type": "responses"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "chat_completions"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "other"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        },
+        {
+          "endpoint_url": "http://localhost:8000/metrics",
+          "labels": {
+            "mode": "streaming",
+            "model_name": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+            "outcome": "tool_call",
+            "request_type": "responses"
+          },
+          "stats": {
+            "total": 0.0,
+            "rate": 0.0
+          }
+        }
+      ]
+    }
+  },
+  "input_config": {
+    "models": {
+      "items": [
+        {
+          "name": "nvidia/Qwen3.6-35B-A3B-NVFP4"
+        }
+      ]
+    },
+    "endpoint": {
+      "urls": [
+        "http://localhost:8000"
+      ],
+      "type": "chat",
+      "path": "/v1/chat/completions",
+      "streaming": true
+    },
+    "datasets": [
+      {
+        "name": "main",
+        "type": "file",
+        "path": "/data/multi_turn_iso_text_chat.jsonl",
+        "format": "multi_turn",
+        "entries": 50,
+        "random_seed": 42,
+        "osl": {
+          "mean": 512.0,
+          "stddev": 128.0
+        }
+      }
+    ],
+    "phases": [
+      {
+        "name": "warmup",
+        "kind": "warmup",
+        "type": "concurrency",
+        "exclude_from_results": true,
+        "requests": 3,
+        "concurrency": 1
+      },
+      {
+        "name": "profiling",
+        "kind": "profiling",
+        "type": "concurrency",
+        "requests": 50,
+        "sessions": 50,
+        "concurrency": 1
+      }
+    ],
+    "artifacts": {
+      "dir": "/output",
+      "auto_plot": false,
+      "plot_required": false
+    },
+    "tokenizer": {},
+    "gpu_telemetry": {
+      "enabled": true,
+      "urls": [],
+      "collector": "pynvml",
+      "mode": "summary"
+    },
+    "server_metrics": {
+      "enabled": true,
+      "urls": [],
+      "formats": [
+        "json",
+        "csv"
+      ]
+    },
+    "network_latency": {
+      "enabled": false
+    },
+    "otel": {},
+    "mlflow": {},
+    "wandb": {},
+    "runtime": {
+      "ui": "none"
+    }
+  }
+}

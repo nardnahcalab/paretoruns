@@ -1,0 +1,1378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MOE Pareto Benchmark - GB10 Multi-Dataset Analysis</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --orange: #d29922;
+      --red: #f85149;
+      --purple: #bc8cff;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    h1 { color: #fff; font-size: 2rem; margin-bottom: 0.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+    h2 { color: var(--accent); font-size: 1.4rem; margin: 2rem 0 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.4rem; }
+    h3 { color: var(--purple); font-size: 1.15rem; margin: 1.5rem 0 0.75rem; }
+    h4 { color: var(--orange); font-size: 1rem; margin: 1rem 0 0.5rem; }
+    p { margin-bottom: 1rem; }
+    code {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.15em 0.4em;
+      font-size: 0.9em;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    pre {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      overflow-x: auto;
+      margin: 1rem 0;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+    pre code { background: none; border: none; padding: 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.9rem;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.6rem 0.8rem;
+      text-align: left;
+    }
+    th { background: var(--surface); color: #fff; font-weight: 600; }
+    td { background: var(--bg); }
+    tr:hover td { background: #1c2129; }
+    .note {
+      background: #1c2129;
+      border-left: 3px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+      font-size: 0.9rem;
+    }
+    .warn {
+      background: #2a1a0a;
+      border-left: 3px solid var(--orange);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+      font-size: 0.9rem;
+    }
+    .file-tree {
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1rem;
+      margin: 1rem 0;
+      white-space: pre;
+      line-height: 1.7;
+    }
+    .metric { color: var(--green); font-weight: 600; }
+    .tag {
+      display: inline-block;
+      background: #1f2937;
+      color: var(--accent);
+      padding: 0.15em 0.5em;
+      border-radius: 3px;
+      font-size: 0.8rem;
+      margin-right: 0.3em;
+    }
+    .tag-gb10 { color: var(--green); }
+    .tag-moe { color: var(--purple); }
+    .tag-aiperf { color: var(--orange); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+    li { margin-bottom: 0.3rem; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  </style>
+</head>
+<body>
+
+<h1>MOE Pareto Benchmark</h1>
+<p>
+  <span class="tag tag-gb10">GB10 / DGX Spark</span>
+  <span class="tag tag-moe">Mixture of Experts</span>
+  <span class="tag tag-aiperf">AIPerf 0.12.0</span>
+</p>
+<p>
+  Benchmark how an MOE model's prefill and decode performance differ across
+  <strong>text</strong>, <strong>random</strong>, and <strong>reasoning</strong>
+  workloads at varying concurrency levels on NVIDIA GB10 hardware. The goal is to
+  produce Pareto curves that reveal MOE routing sensitivity to content type.
+</p>
+
+<hr>
+
+<h2>Contents</h2>
+<ol>
+  <li><a href="#overview">Overview &amp; Motivation</a></li>
+  <li><a href="#hardware">Hardware: NVIDIA GB10</a></li>
+  <li><a href="#model">MOE Model: Qwen3.6-35B-A3B</a></li>
+  <li><a href="#datasets">Datasets</a></li>
+  <li><a href="#files">File Layout</a></li>
+  <li><a href="#launch">Script: launch_vllm.sh</a></li>
+  <li><a href="#benchmark">Script: run_benchmark.sh</a></li>
+  <li><a href="#moewhy">Why MOE Performance Differs by Dataset</a></li>
+  <li><a href="#routing">Router Profiling Findings</a></li>
+  <li><a href="#multiturn">Multi-Turn &amp; Longer-Conversation Routing</a></li>
+  <li><a href="#pareto">Reading the Pareto Curves</a></li>
+  <li><a href="#quickstart">Quick Start</a></li>
+</ol>
+
+<hr>
+
+<h2 id="overview">1. Overview &amp; Motivation</h2>
+<p>
+  Mixture-of-Experts models route each token through a subset of "experts" in
+  every MoE layer. The routing decision depends on the token's learned
+  representation, which in turn depends on the <em>type of content</em> being
+  processed. This means:
+</p>
+<ul>
+  <li><strong>Natural text</strong> has strong token correlations (word bigrams,
+      grammar, semantics) that shape how experts are selected.</li>
+  <li><strong>Random words</strong> break all correlations, forcing the router to
+      activate a different mix of experts on every token.</li>
+  <li><strong>Reasoning chains</strong> create deep, structured attention patterns
+      where each token depends on prior logical steps.</li>
+</ul>
+<p>
+  By benchmarking all three workloads against the same model and hardware, we
+  can observe how the MOE architecture's <em>routing behavior</em> manifests as
+  measurable differences in prefill latency (TTFT), decode throughput (tok/s),
+  inter-token latency (ITL), and GPU utilization.
+</p>
+<p>
+  The two scripts in this project automate the full pipeline:
+  <code>launch_vllm.sh</code> deploys the model, and
+  <code>run_benchmark.sh</code> sweeps concurrency levels across all three
+  datasets, collecting GPU telemetry and generating Pareto frontier plots.
+</p>
+
+<hr>
+
+<h2 id="hardware">2. Hardware: NVIDIA GB10 (DGX Spark)</h2>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Architecture</td><td>Grace Blackwell (SM121) &mdash; <em>not</em> datacenter Blackwell SM100</td></tr>
+  <tr><td>GPU Cores</td><td>6,144 CUDA cores, 48 SMs</td></tr>
+  <tr><td>Memory</td><td>128 GB LPDDR5X unified (CPU + GPU shared pool)</td></tr>
+  <tr><td>Memory Bandwidth</td><td>273 GB/s</td></tr>
+  <tr><td>TDP</td><td>140 W (GPU portion of GB10 SoC)</td></tr>
+  <tr><td>Tensor Performance</td><td>Up to 1 PFLOP FP4</td></tr>
+  <tr><td>Interconnect</td><td>NVLink-C2C (~600 GB/s CPU-GPU aggregate)</td></tr>
+  <tr><td>Key Limitation</td><td>Unified memory &mdash; OS, page cache, and CUDA allocations share the same 128 GB</td></tr>
+</table>
+
+<div class="note">
+  <strong>SM121 vs SM100:</strong> Many vLLM flags and Docker images written for
+  datacenter Blackwell (B100/B200, SM100) silently break on GB10 (SM121).
+  CUTLASS FP4 MoE kernels produce garbage output. The correct MoE backend for
+  GB10 is <code>marlin</code>. This is handled automatically by
+  <code>launch_vllm.sh</code>.
+</div>
+
+<hr>
+
+<h2 id="model">3. MOE Model: Qwen3.6-35B-A3B</h2>
+<p>
+  Two quantized variants benchmarked on GB10:
+  <a href="https://huggingface.co/nvidia/Qwen3.6-35B-A3B-NVFP4">nvidia/Qwen3.6-35B-A3B-NVFP4</a>
+  (4-bit MoE, primary baseline) and
+  <a href="https://huggingface.co/Qwen/Qwen3.6-35B-A3B-FP8">Qwen/Qwen3.6-35B-A3B-FP8</a>
+  (8-bit MoE, comparison).
+</p>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Total Parameters</td><td>35B</td></tr>
+  <tr><td>Active Parameters</td><td>3B per token</td></tr>
+  <tr><td>Experts</td><td>256 total, 8 routed + 1 shared</td></tr>
+  <tr><td>Architecture</td><td>Gated DeltaNet + MoE hybrid (linear attention + softmax attention)</td></tr>
+  <tr><td>Layers</td><td>40 (10 Gated Attention + 30 Gated DeltaNet)</td></tr>
+  <tr><td>Quantization</td><td>NVFP4 (ModelOpt) &mdash; MoE experts in 4-bit, attention projections in FP8</td></tr>
+  <tr><td>Context Length</td><td>262,144 tokens native, extensible to 1M via YaRN</td></tr>
+  <tr><td>MTP Support</td><td>Multi-Token Prediction trained</td></tr>
+</table>
+
+<h3>Why This Model</h3>
+<p>
+  The 256-expert / 8-active architecture means only ~3% of parameters execute per
+  token. The router must choose which 8 experts to activate, and this choice is
+  content-dependent. Text, random, and reasoning inputs produce measurably
+  different routing distributions, which in turn affect:
+</p>
+<ul>
+  <li><strong>Prefill speed</strong> &mdash; expert selection affects compute distribution across SMs</li>
+  <li><strong>Decode throughput</strong> &mdash; router efficiency directly impacts tokens/second</li>
+  <li><strong>Memory pressure</strong> &mdash; different experts being active means different weight pages in VRAM</li>
+</ul>
+
+<hr>
+
+<h2 id="datasets">4. Datasets</h2>
+<p>
+  All three datasets are <strong>isomorphic</strong>: identical session count,
+  turn count, and word count. Only the <em>content</em> differs.
+</p>
+<table>
+  <tr>
+    <th>Dataset</th>
+    <th>Sessions</th>
+    <th>Total Turns</th>
+    <th>Avg Words/Turn</th>
+    <th>Avg Chars/Turn</th>
+    <th>Content Type</th>
+  </tr>
+  <tr>
+    <td><code>multi_turn_iso_text_chat.jsonl</code></td>
+    <td>500</td>
+    <td>1,783</td>
+    <td>10.0</td>
+    <td>53.6</td>
+    <td>Natural conversational prompts (sleep, Python, trips, etc.)</td>
+  </tr>
+  <tr>
+    <td><code>multi_turn_iso_random_chat.jsonl</code></td>
+    <td>500</td>
+    <td>1,783</td>
+    <td>10.0</td>
+    <td>70.1</td>
+    <td>Random word sequences ("crimson point trouble building...")</td>
+  </tr>
+  <tr>
+    <td><code>multi_turn_iso_reasoning_chat.jsonl</code></td>
+    <td>500</td>
+    <td>1,783</td>
+    <td>10.0</td>
+    <td>57.8</td>
+    <td>Logic proofs and math reasoning ("Prove that...", "Show every step...")</td>
+  </tr>
+</table>
+
+<h3>JSONL Format</h3>
+<p>Each line is a self-contained multi-turn session:</p>
+<pre><code>{"session_id": "...", "turns": [{"text": "How can I improve my sleep quality?"}, {"text": "Can you give me a specific example?"}]}</code></pre>
+<p>
+  AIPerf's <code>--custom-dataset-type multi_turn</code> loader reads these
+  files. Each turn is sent sequentially within a session, with the full
+  conversation history accumulated. Multiple sessions run concurrently up to the
+  <code>--concurrency</code> limit.
+</p>
+
+<hr>
+
+<h2 id="files">5. File Layout</h2>
+<div class="file-tree">pareto/
+├── launch_vllm.sh                          # vLLM server launcher (GB10-optimized)
+├── run_benchmark.sh                        # AIPerf multi-dataset Pareto benchmark
+├── router_probe.py                         # MoE router tracing (enable_return_routed_experts)
+├── router_probe_multiturn.py               # Multi-turn scaled router probe (64 tok, 10 turns)
+├── make_pareto.py                          # Pareto report generator (inline SVG)
+├── compare_sweeps.py                       # Multi-sweep comparison report
+├── multi_turn_iso_text_chat.jsonl          # 500 sessions, natural language
+├── multi_turn_iso_random_chat.jsonl        # 500 sessions, random words
+├── multi_turn_iso_reasoning_chat.jsonl     # 500 sessions, reasoning chains
+├── router_out/                             # Router probe output
+│   ├── probe.text.json                     # Text routing stats (entropy, loads, per-layer)
+│   ├── probe.random.json                   # Random routing stats
+│   ├── probe.reasoning.json                # Reasoning routing stats
+│   ├── mt_probe.text.json                  # Multi-turn text routing (64 tok, 10 turns)
+│   ├── mt_probe.random.json                # Multi-turn random routing
+│   └── mt_probe.reasoning.json             # Multi-turn reasoning routing
+├── results/                                # Created by run_benchmark.sh
+│   ├── 20260807_182301/                    # NVFP4 Baseline: 128-tok, c1-c8, 50 reqs
+│   ├── 20260807_202520_longtok2/           # NVFP4 Long-output: 512-tok, c1-c2, 50 reqs
+│   ├── 20260807_210115_sat/                # NVFP4 Saturation: 128-tok, c16-c32, 60 reqs
+│   ├── 20260808_103153/                    # NVFP4 Long-output gap: 512-tok, c4-c8, 50 reqs
+│   ├── 20260808_111242/                    # NVFP4 High-confidence: 128-tok, c1-c8, 200 reqs
+│   ├── 20260808_131407/                    # NVFP4 Long-output saturation: 512-tok, c16-c32, 60 reqs
+│   ├── 20260808_173437_fp8_128/            # FP8 128-tok: text/random c1-c4, 200 reqs
+│   ├── 20260808_183519_fp8_128_rest/       # FP8 128-tok: all datasets c4-c8, 200 reqs
+│   ├── 20260808_212607_fp8_128_reasoning/  # FP8 128-tok: reasoning c1-c2, 200 reqs
+│   ├── 20260808_215214_fp8_512/            # FP8 512-tok: all datasets c1-c8, 60 reqs
+│   ├── fp8_128_consolidated/               # FP8 128-tok: best values merged
+│   ├── fp8_512_consolidated/               # FP8 512-tok: all 12 runs
+│   ├── nvfp4_vs_fp8_128.html              # Comparison report (128-tok)
+│   ├── nvfp4_vs_fp8_512.html              # Comparison report (512-tok)
+│   └── benchmark_comparison.html           # NVFP4 multi-sweep comparison</div>
+
+<hr>
+
+<h2 id="launch">6. Script: launch_vllm.sh</h2>
+<p>
+  Deploys the MOE model in a Docker container with GB10-specific settings.
+  Handles preflight checks, container lifecycle, health verification, and a
+  quick sanity test.
+</p>
+
+<h3>Usage</h3>
+<pre><code># Start server (default: NVFP4)
+./launch_vllm.sh
+
+# FP8 model (requires --load-format safetensors --enforce-eager)
+./launch_vllm.sh --model Qwen/Qwen3.6-35B-A3B-FP8 --load-format safetensors --enforce-eager
+
+# Custom model and port
+./launch_vllm.sh --model nvidia/Qwen3.6-35B-A3B-NVFP4 --port 8000
+
+# More aggressive memory usage
+./launch_vllm.sh --gpu-mem 0.5 --max-seqs 8
+
+# Check status
+./launch_vllm.sh --status
+
+# Stop server
+./launch_vllm.sh --stop</code></pre>
+
+<h3>Options Reference</h3>
+<table>
+  <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+  <tr>
+    <td><code>--model MODEL</code></td>
+    <td><code>nvidia/Qwen3.6-35B-A3B-NVFP4</code></td>
+    <td>HuggingFace model ID. The NVFP4 checkpoint ships with 4-bit MoE experts and FP8 attention projections.</td>
+  </tr>
+  <tr>
+    <td><code>--port PORT</code></td>
+    <td><code>8000</code></td>
+    <td>Host port for the OpenAI-compatible API endpoint.</td>
+  </tr>
+  <tr>
+    <td><code>--gpu-mem UTIL</code></td>
+    <td><code>0.4</code></td>
+    <td>Fraction of GPU-visible memory vLLM may claim. On GB10 this is a fraction of the unified pool. Keep under 0.5 for long-context workloads; OS and page cache compete for the same 128 GB.</td>
+  </tr>
+  <tr>
+    <td><code>--max-seqs N</code></td>
+    <td><code>4</code></td>
+    <td>Maximum in-flight sequences. GB10's 273 GB/s bandwidth makes high concurrency expensive; each additional sequence multiplies KV cache reads. Keep at 4 for TTFT stability.</td>
+  </tr>
+  <tr>
+    <td><code>--max-len N</code></td>
+    <td><code>262144</code></td>
+    <td>Maximum context length in tokens. Qwen3.6-35B natively supports 262K. Reducing this frees KV cache memory for more concurrent sessions.</td>
+  </tr>
+  <tr>
+    <td><code>--load-format FMT</code></td>
+    <td><code>fastsafetensors</code></td>
+    <td>Weight load format. Use <code>safetensors</code> for FP8 model, <code>fastsafetensors</code> for NVFP4.</td>
+  </tr>
+  <tr>
+    <td><code>--enforce-eager</code></td>
+    <td>off</td>
+    <td>Disable CUDA graphs. <strong>Required for FP8 model</strong> due to DeepGEMM E8M0 assertion on SM121. Reduces throughput at high concurrency.</td>
+  </tr>
+  <tr>
+    <td><code>--image IMAGE</code></td>
+    <td><code>vllm/vllm-openai:v0.24.0-ubuntu2404</code></td>
+    <td>vLLM Docker image. Must support aarch64/SM121. The default is the official vLLM image with GB10 support.</td>
+  </tr>
+  <tr>
+    <td><code>--name NAME</code></td>
+    <td><code>vllm-moe-gb10</code></td>
+    <td>Docker container name. Used for <code>--stop</code> and <code>--status</code> commands.</td>
+  </tr>
+  <tr>
+    <td><code>--stop</code></td>
+    <td>&mdash;</td>
+    <td>Force-remove the container. Weight and compile caches on mounted volumes survive.</td>
+  </tr>
+  <tr>
+    <td><code>--status</code></td>
+    <td>&mdash;</td>
+    <td>Show container state, health check result, and registered model list.</td>
+  </tr>
+</table>
+
+<h3>vLLM Serve Flags (GB10-Critical)</h3>
+<table>
+  <tr><th>Flag / Env Var</th><th>Value</th><th>Why It Matters</th></tr>
+  <tr>
+    <td><code>--moe-backend marlin</code></td>
+    <td>marlin</td>
+    <td><strong>Required on SM121.</strong> CUTLASS FP4 MoE produces silent garbage output on GB10. Marlin is the only verified-correct MoE kernel path.</td>
+  </tr>
+  <tr>
+    <td><code>VLLM_MARLIN_USE_ATOMIC_ADD=1</code></td>
+    <td>1</td>
+    <td><strong>Required on SM121.</strong> Without this, a Marlin kernel race condition produces <code>!!!!</code> garbage output.</td>
+  </tr>
+  <tr>
+    <td><code>VLLM_USE_FLASHINFER_MOE_FP4=0</code></td>
+    <td>0</td>
+    <td><strong>Required on SM121.</strong> FlashInfer's FP4 MoE backend does not support SM121. Keeps MoE routing off the broken path.</td>
+  </tr>
+  <tr>
+    <td><code>--kv-cache-dtype fp8_e4m3</code></td>
+    <td>fp8_e4m3</td>
+    <td>FP8 KV cache halves memory per token vs BF16, fitting more context into the unified pool. Works correctly on SM121.</td>
+  </tr>
+  <tr>
+    <td><code>--enable-prefix-caching</code></td>
+    <td>enabled</td>
+    <td><strong>Critical for multi-turn benchmark.</strong> Reuses the KV cache for shared conversation prefixes. Without this, each turn recomputes the entire history from scratch.</td>
+  </tr>
+  <tr>
+    <td><code>--enable-chunked-prefill</code></td>
+    <td>enabled</td>
+    <td>Splits long prefill computations into chunks, interleaving them with decode steps. Prevents one long prefill from blocking all in-flight sequences.</td>
+  </tr>
+  <tr>
+    <td><code>--load-format fastsafetensors</code></td>
+    <td>fastsafetensors</td>
+    <td>2-3x faster weight loading than standard safetensors. Uses memory-mapped I/O for the NVFP4 checkpoint (~35 GB).</td>
+  </tr>
+  <tr>
+    <td><code>--reasoning-parser qwen3</code></td>
+    <td>qwen3</td>
+    <td>Parses Qwen3's native reasoning tags. Required for the reasoning dataset prompts that trigger chain-of-thought responses.</td>
+  </tr>
+  <tr>
+    <td><code>--attention-backend flashinfer</code></td>
+    <td>flashinfer</td>
+    <td>FlashInfer attention kernels compiled for SM121. Alternative: <code>TRITON_ATTN</code> if FlashInfer has accuracy issues.</td>
+  </tr>
+  <tr>
+    <td><code>VLLM_FLASHINFER_MOE_BACKEND=latency</code></td>
+    <td>latency</td>
+    <td>Optimizes MoE kernel selection for single-request latency rather than throughput. Better for interactive workloads on GB10.</td>
+  </tr>
+  <tr>
+    <td><code>HF_HUB_DISABLE_XET=1</code></td>
+    <td>1</td>
+    <td>Workaround for broken xet downloader in the base container's huggingface_hub package.</td>
+  </tr>
+  <tr>
+    <td><code>VLLM_USE_DEEP_GEMM=0</code></td>
+    <td>0</td>
+    <td><strong>Required for FP8 on SM121.</strong> Disables DeepGEMM kernels that crash with E8M0 assertion error on GB10.</td>
+  </tr>
+</table>
+
+<h3>Environment Variables</h3>
+<p>Override defaults by exporting before running:</p>
+<pre><code>export MODEL_ID=nvidia/Qwen3.6-35B-A3B-NVFP4
+export PORT=8000
+export GPU_MEM_UTIL=0.4
+export HF_TOKEN=hf_your_token_here
+./launch_vllm.sh</code></pre>
+
+<hr>
+
+<h2 id="benchmark">7. Script: run_benchmark.sh</h2>
+<p>
+  Runs AIPerf benchmarks across all three datasets at multiple concurrency
+  levels. Each run executes inside the <code>nvcr.io/nvidia/ai-dynamo/aiperf:0.12.0</code>
+  Docker container with GPU telemetry enabled.
+</p>
+
+<h3>Usage</h3>
+<pre><code># Run with defaults (concurrency 1,2,4,8,16, 100 requests each)
+./run_benchmark.sh
+
+# Custom concurrency sweep and endpoint
+./run_benchmark.sh --url http://spark:8000 --concurrency "1 2 4 8 16 32"
+
+# More requests for better statistical confidence
+./run_benchmark.sh --requests 200 --concurrency "1 4 8 16"</code></pre>
+
+<h3>Options Reference</h3>
+<table>
+  <tr><th>Flag</th><th>Default</th><th>Description</th></tr>
+  <tr>
+    <td><code>--url URL</code></td>
+    <td><code>http://localhost:8000</code></td>
+    <td>vLLM server endpoint. Use the host's IP if running aiperf in a separate container.</td>
+  </tr>
+  <tr>
+    <td><code>--model MODEL</code></td>
+    <td><code>nvidia/Qwen3.6-35B-A3B-NVFP4</code></td>
+    <td>Model name passed to aiperf. Must match the model registered in vLLM.</td>
+  </tr>
+  <tr>
+    <td><code>--concurrency LEVELS</code></td>
+    <td><code>"1 2 4 8 16"</code></td>
+    <td>Space-separated concurrency levels. Each level produces one data point on the Pareto curve. More levels = finer frontier resolution.</td>
+  </tr>
+  <tr>
+    <td><code>--requests N</code></td>
+    <td><code>100</code></td>
+    <td>Total requests per run. Also caps the number of conversations used from each dataset (max 500, the dataset size).</td>
+  </tr>
+  <tr>
+    <td><code>--output-dir DIR</code></td>
+    <td><code>./results</code></td>
+    <td>Root output directory. A timestamped subdirectory is created for each benchmark session.</td>
+  </tr>
+</table>
+
+<h3>Environment Variables</h3>
+<table>
+  <tr><th>Variable</th><th>Default</th><th>Description</th></tr>
+  <tr>
+    <td><code>AIPERF_IMAGE</code></td>
+    <td><code>nvcr.io/nvidia/ai-dynamo/aiperf:0.12.0</code></td>
+    <td>Docker image for AIPerf. Includes aiperf CLI and plotting tools.</td>
+  </tr>
+  <tr>
+    <td><code>WARMUP_REQUESTS</code></td>
+    <td><code>5</code></td>
+    <td>Requests sent before measurement begins. Warms up JIT compilation, CUDA graphs, and KV cache pools.</td>
+  </tr>
+  <tr>
+    <td><code>OUTPUT_TOK_MEAN</code></td>
+    <td><code>256</code></td>
+    <td>Mean output tokens per response. Higher values stress decode throughput more.</td>
+  </tr>
+  <tr>
+    <td><code>OUTPUT_TOK_STDDEV</code></td>
+    <td><code>64</code></td>
+    <td>Standard deviation of output tokens. Adds realistic variance to response lengths.</td>
+  </tr>
+  <tr>
+    <td><code>RANDOM_SEED</code></td>
+    <td><code>42</code></td>
+    <td>Seed for reproducible request ordering and synthesis.</td>
+  </tr>
+  <tr>
+    <td><code>GPU_TELEMETRY_MODE</code></td>
+    <td><code>pynvml</code></td>
+    <td>GPU metrics collection method. <code>pynvml</code> reads directly from the NVIDIA driver via nvidia-ml-py. No DCGM container needed. Alternative: <code>dashboard</code> for live TUI.</td>
+  </tr>
+</table>
+
+<h3>AIPerf Command Flags Explained</h3>
+<table>
+  <tr><th>Flag</th><th>Value</th><th>Purpose</th></tr>
+  <tr>
+    <td><code>--endpoint-type chat</code></td>
+    <td>chat</td>
+    <td>Use the OpenAI chat completions API format (messages array with role/content).</td>
+  </tr>
+  <tr>
+    <td><code>--endpoint /v1/chat/completions</code></td>
+    <td>/v1/chat/completions</td>
+    <td>API path for chat completions.</td>
+  </tr>
+  <tr>
+    <td><code>--streaming</code></td>
+    <td>enabled</td>
+    <td>Use streaming responses (SSE). Measures TTFT accurately since tokens arrive incrementally.</td>
+  </tr>
+  <tr>
+    <td><code>--input-file FILE</code></td>
+    <td>JSONL path</td>
+    <td>Path to the multi-turn JSONL dataset file inside the container.</td>
+  </tr>
+  <tr>
+    <td><code>--custom-dataset-type multi_turn</code></td>
+    <td>multi_turn</td>
+    <td>Tells AIPerf to parse the JSONL as multi-turn sessions with <code>session_id</code> and <code>turns</code> fields.</td>
+  </tr>
+  <tr>
+    <td><code>--conversation-num N</code></td>
+    <td>min(requests, 500)</td>
+    <td>Number of conversation sessions to execute from the dataset. Each session may have 1-10 turns.</td>
+  </tr>
+  <tr>
+    <td><code>--concurrency N</code></td>
+    <td>varies</td>
+    <td>Number of concurrent workers. Controls how many sessions execute in parallel.</td>
+  </tr>
+  <tr>
+    <td><code>--request-count N</code></td>
+    <td>100</td>
+    <td>Total single-turn requests. In multi-turn mode, this caps the overall request volume.</td>
+  </tr>
+  <tr>
+    <td><code>--warmup-request-count N</code></td>
+    <td>5</td>
+    <td>Requests executed before timing begins. Ensures JIT, CUDA graphs, and caches are warm.</td>
+  </tr>
+  <tr>
+    <td><code>--output-tokens-mean N</code></td>
+    <td>256</td>
+    <td>Target output length. Tells the model to generate approximately this many tokens per response.</td>
+  </tr>
+  <tr>
+    <td><code>--output-tokens-stddev N</code></td>
+    <td>64</td>
+    <td>Variance in output length. Simulates realistic response length distribution.</td>
+  </tr>
+  <tr>
+    <td><code>--random-seed N</code></td>
+    <td>42</td>
+    <td>Reproducibility seed for request ordering and synthesis.</td>
+  </tr>
+  <tr>
+    <td><code>--artifact-dir DIR</code></td>
+    <td>/output</td>
+    <td>Where AIPerf writes results (JSON exports, CSVs, plots). Mounted from the host.</td>
+  </tr>
+  <tr>
+    <td><code>--ui none</code></td>
+    <td>none</td>
+    <td>Headless mode. No interactive dashboard. Output goes to stdout + log file.</td>
+  </tr>
+  <tr>
+    <td><code>--gpu-telemetry pynvml</code></td>
+    <td>pynvml</td>
+    <td>Collect GPU metrics (utilization, memory, power, temperature) via nvidia-ml-py during the run. No DCGM setup needed.</td>
+  </tr>
+</table>
+
+<h3>Output Structure</h3>
+<p>
+  Each run produces a directory named <code>{dataset}_c{concurrency}</code>
+  containing:
+</p>
+<ul>
+  <li><code>profile_export_aiperf.json</code> &mdash; Full metrics export with TTFT, ITL, throughput, GPU telemetry, and per-request traces</li>
+  <li><code>*.png</code> &mdash; Generated plots (TTFT vs Throughput, Latency vs Throughput Pareto curves)</li>
+  <li><code>aiperf_stdout.log</code> &mdash; Raw console output from the aiperf run</li>
+</ul>
+<p>
+  After all runs complete, <code>aiperf plot</code> is invoked across all
+  directories to generate comparison plots.
+</p>
+
+<hr>
+
+<h2 id="moewhy">8. Why MOE Performance Differs by Dataset</h2>
+
+<h3>Expert Routing in MOE</h3>
+<p>
+  In each MoE layer, a <strong>router network</strong> (typically a learned
+  linear projection + softmax) assigns each token to the top-K experts. For
+  Qwen3.6-35B-A3B, K=8 out of 256 experts. The router's decision is based on
+  the token's hidden state, which is shaped by all preceding tokens.
+</p>
+
+<h3>Dataset-Specific Behavior</h3>
+
+<h4>Text Dataset</h4>
+<ul>
+  <li><strong>Token correlations:</strong> Natural English has strong bigram/trigram statistics. The router sees familiar patterns and selects a <em>consistent</em> expert mix across similar contexts.</li>
+  <li><strong>Prefill:</strong> Moderate TTFT. Prefix caching is effective because conversation turns share common framing ("How can I...", "Can you...").</li>
+  <li><strong>Decode:</strong> Highest throughput. Predictable token patterns let the model pipeline expert computation efficiently.</li>
+  <li><strong>GPU utilization:</strong> Balanced across SMs since expert selection is distributed.</li>
+</ul>
+
+<h4>Random Dataset</h4>
+<ul>
+  <li><strong>Token correlations:</strong> None. Every token is semantically unrelated to its neighbors. The router sees a different "topic" on every token.</li>
+  <li><strong>Prefill:</strong> Higher TTFT than text. The router must evaluate all 256 experts more evenly since there's no pattern to exploit.</li>
+  <li><strong>Decode:</strong> Lower throughput. Each decode step requires full router evaluation with no prediction benefit from prior tokens.</li>
+  <li><strong>GPU utilization:</strong> May show higher variance across SMs as different expert combinations are activated per token.</li>
+</ul>
+
+<h4>Reasoning Dataset</h4>
+<ul>
+  <li><strong>Token correlations:</strong> Deep logical structure. Each token depends on reasoning chain built in prior tokens ("Assume X, therefore Y, which implies Z...").</li>
+  <li><strong>Prefill:</strong> Potentially fastest. Reasoning prompts are formulaic and shorter ("Prove that...", "Show every step..."). Less text to process.</li>
+  <li><strong>Decode:</strong> Highest ITL (inter-token latency). Each output token requires attending to the full reasoning chain. The model cannot "shortcut" logical dependencies.</li>
+  <li><strong>GPU utilization:</strong> Concentrated on attention-heavy experts during chain-of-thought generation.</li>
+</ul>
+
+<h3>Prefix Caching Interaction</h3>
+<p>
+  Prefix caching (<code>--enable-prefix-caching</code>) interacts differently
+  with each dataset:
+</p>
+<ul>
+  <li><strong>Text:</strong> Moderate benefit. Turn prefixes overlap in phrasing but diverge in content.</li>
+  <li><strong>Random:</strong> Minimal benefit. Random words produce different token sequences each time, so KV cache reuse is limited.</li>
+  <li><strong>Reasoning:</strong> Maximum benefit. System prompts and formulaic opening phrases form long shared prefixes across sessions.</li>
+</ul>
+
+<hr>
+
+<h2 id="pareto">9. Reading the Pareto Curves</h2>
+<p>
+  AIPerf's <code>pareto</code> plot shows <strong>Throughput vs Latency</strong>
+  (or TTFT vs Throughput) with the Pareto frontier highlighted. Each data point
+  represents one concurrency level. The three datasets should produce distinct
+  curves:
+</p>
+
+<h3>Interpreting the Curves</h3>
+<table>
+  <tr><th>Curve Shape</th><th>Meaning</th></tr>
+  <tr>
+    <td>Steep ascent (throughput rises fast with concurrency)</td>
+    <td>Good scalability. The MOE router handles increased load efficiently. Expected for <strong>text</strong> dataset.</td>
+  </tr>
+  <tr>
+    <td>Flat or declining at high concurrency</td>
+    <td>Bottleneck reached. Memory bandwidth (273 GB/s) or KV cache saturation limits further gains. Expected at concurrency &ge;8 on GB10.</td>
+  </tr>
+  <tr>
+    <td>Higher baseline latency but steep curve</td>
+    <td>Expensive prefill but good decode scaling. Expected for <strong>reasoning</strong> (deep attention chains).</td>
+  </tr>
+  <tr>
+    <td>Lower throughput at all concurrency levels</td>
+    <td>Router inefficiency. Random content prevents the model from exploiting token patterns. Expected for <strong>random</strong> dataset.</td>
+  </tr>
+  <tr>
+    <td>Different frontier positions per dataset</td>
+    <td>MOE routing sensitivity to content type. This is the core finding this benchmark aims to produce.</td>
+  </tr>
+</table>
+
+<h3>Key Metrics to Compare</h3>
+<table>
+  <tr><th>Metric</th><th>What It Shows</th><th>Expected Ordering</th></tr>
+  <tr>
+    <td><span class="metric">TTFT (Time to First Token)</span></td>
+    <td>Prefill latency. How long until the first output token arrives.</td>
+    <td>random &ge; text &gt; reasoning (shorter prompts)</td>
+  </tr>
+  <tr>
+    <td><span class="metric">ITL (Inter-Token Latency)</span></td>
+    <td>Decode speed. Time between consecutive output tokens.</td>
+    <td>reasoning &gt; random &gt; text</td>
+  </tr>
+  <tr>
+    <td><span class="metric">Throughput (tok/s)</span></td>
+    <td>Decode throughput. Total tokens generated per second.</td>
+    <td>text &gt; random &gt; reasoning</td>
+  </tr>
+  <tr>
+    <td><span class="metric">GPU Utilization %</span></td>
+    <td>How much of the GPU is busy. Low utilization = bottleneck elsewhere.</td>
+    <td>text &ge; reasoning &gt; random</td>
+  </tr>
+  <tr>
+    <td><span class="metric">Request Latency P99</span></td>
+    <td>Worst-case total request time. Includes prefill + decode + overhead.</td>
+    <td>reasoning &gt; random &gt; text</td>
+  </tr>
+</table>
+
+<hr>
+
+<h2 id="quickstart">10. Quick Start</h2>
+
+<h3>Prerequisites</h3>
+<ul>
+  <li>NVIDIA GB10 (DGX Spark) with Docker and nvidia-container-toolkit</li>
+  <li>HuggingFace token: <code>export HF_TOKEN=hf_your_token_here</code></li>
+  <li>~45 GB free disk for model weights (~35 GB) + container image (~10 GB)</li>
+</ul>
+
+<h3>Step 1: Launch the Server</h3>
+<pre><code>cd pareto/
+export HF_TOKEN=hf_your_token_here
+
+# NVFP4 (default, recommended for multi-user)
+./launch_vllm.sh
+
+# FP8 (faster for single-user, requires extra flags)
+./launch_vllm.sh --model Qwen/Qwen3.6-35B-A3B-FP8 --load-format safetensors --enforce-eager</code></pre>
+<p>
+  First boot downloads the model (~35-37 GB) and compiles CUDA graphs (NVFP4 only).
+  Allow 15-25 minutes. Subsequent starts use cached weights and are much faster.
+  FP8 first boot takes ~30 min due to safetensors loading (no fastsafetensors).
+</p>
+
+<h3>Step 2: Run the Benchmark</h3>
+<pre><code>./run_benchmark.sh</code></pre>
+<p>
+  Runs 12 benchmark runs (3 datasets &times; 4 concurrency levels) with GPU
+  telemetry, then generates a <code>pareto_report.html</code> via
+  <code>make_pareto.py</code>. Total time: 20-40 minutes.
+</p>
+
+<h3>Step 2b: Additional Sweeps</h3>
+<pre><code># Long decode-phase outputs (reveals content-type routing differences)
+./run_sweep.sh --concurrency '1 2' --output-tokens 512 --output-std 128 --requests 50 --label longtok
+
+# Fill the 512-tok gap at c4,c8
+./run_sweep.sh --concurrency '4 8' --output-tokens 512 --output-std 128 --requests 50 --label longtok_gap
+
+# Find the concurrency saturation point (128-tok)
+./run_sweep.sh --concurrency '16 32' --output-tokens 128 --output-std 32 --requests 60 --label sat
+
+# High-confidence sweep (200 requests for tighter CIs)
+./run_sweep.sh --concurrency '1 2 4 8' --output-tokens 128 --output-std 32 --requests 200 --label highconf
+
+# Long-output saturation (512-tok at high concurrency)
+./run_sweep.sh --concurrency '16 32' --output-tokens 512 --output-std 128 --requests 60 --label longtok_sat
+
+# FP8 comparison sweeps (requires FP8 server running)
+MODEL_NAME=Qwen/Qwen3.6-35B-A3B-FP8 ./run_sweep.sh --concurrency '1 2 4 8' \
+  --output-tokens 128 --output-std 32 --requests 200 --label fp8_128
+
+MODEL_NAME=Qwen/Qwen3.6-35B-A3B-FP8 ./run_sweep.sh --concurrency '1 2 4 8' \
+  --output-tokens 512 --output-std 128 --requests 60 --label fp8_512</code></pre>
+<p>
+  Every sweep writes its own timestamped directory plus a
+  <code>pareto_report.html</code>. A per-run timeout guard
+  (<code>--timeout</code>) prevents a stuck generation from blocking a sweep.
+</p>
+
+<h3>Step 3: Analyze Results</h3>
+<pre><code># View a specific run's metrics
+cat results/*/text_c1/profile_export_aiperf.json | python3 -m json.tool
+
+# HTML report for one sweep (inline SVG Pareto curves, no dependencies)
+python3 make_pareto.py  results/&lt;timestamp&gt;           # writes pareto_report.html
+
+# Combined multi-sweep comparison report (overlay + full metrics table)
+python3 compare_sweeps.py --out results/benchmark_comparison.html \
+    baseline=results/&lt;ts&gt;_base  longtok=results/&lt;ts&gt;_longtok \
+    saturation=results/&lt;ts&gt;_sat highconf=results/&lt;ts&gt;_highconf
+
+# Router profiling (captures real fused-kernel expert selections)
+docker run --rm --gpus all \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  -v ~/.cache/flashinfer:/root/.cache/flashinfer \
+  -v $(pwd):/data \
+  --entrypoint python3 vllm/vllm-openai:v0.24.0-ubuntu2404 \
+  /data/router_probe.py \
+    --text /data/multi_turn_iso_text_chat.jsonl \
+    --random /data/multi_turn_iso_random_chat.jsonl \
+    --reasoning /data/multi_turn_iso_reasoning_chat.jsonl \
+    --limit 30 --max-tokens 16 --max-len 512 \
+    --out /data/router_out/probe --gpu-mem 0.8
+
+# Multi-turn scaled probe (64 output tokens, 10-turn conversations)
+docker run --rm --gpus all \
+  -v ~/.cache/huggingface:/root/.cache/huggingface \
+  -v ~/.cache/flashinfer:/root/.cache/flashinfer \
+  -v $(pwd):/data \
+  --entrypoint python3 vllm/vllm-openai:v0.24.0-ubuntu2404 \
+  /data/router_probe_multiturn.py \
+    --text /data/multi_turn_iso_text_chat.jsonl \
+    --random /data/multi_turn_iso_random_chat.jsonl \
+    --reasoning /data/multi_turn_iso_reasoning_chat.jsonl \
+    --limit 50 --max-tokens 64 --max-len 4096 \
+    --out /data/router_out/mt_probe --gpu-mem 0.85
+
+# Verify entropy trajectory is correct (should NOT be constant 0.375)
+python3 -c "
+import json
+with open('router_out/mt_probe.text.json') as f:
+    d = json.load(f)
+traj = d['position']
+print('First token entropy:', traj[0]['mean_entropy'])
+print('Last token entropy:', traj[-1]['mean_entropy'])
+print('Trajectory length:', len(traj))
+# First=0.726, Last=0.860 confirms fix (was constant 0.375 before)
+"</code></pre>
+<p>
+  <code>make_pareto.py</code> and <code>compare_sweeps.py</code> use only the
+  Python standard library (inline SVG, no Chrome/Plotly needed). The aiperf
+  built-in <code>plot</code> command requires Google Chrome in its image and is
+  used as a best-effort first step.
+</p>
+
+<h3>Step 4: Stop the Server</h3>
+<pre><code>./launch_vllm.sh --stop</code></pre>
+
+<hr>
+
+<h2>Measured Findings (GB10)</h2>
+<p>
+  Aggregate of the baseline, long-output, saturation, and high-confidence
+  sweeps. All runs on <code>Qwen3.6-35B-A3B-NVFP4</code>, GB10, AIPerf 0.12.0.
+</p>
+<table>
+  <tr><th>Finding</th><th>Result</th><th>Interpretation</th></tr>
+  <tr>
+    <td>Content-type effect grows with output length</td>
+    <td>At 512-token outputs, reasoning decodes <b>+16-17%</b> faster than text
+        (74.2 vs 63.4 tok/s at c1) with <b>13.1 vs 15.4 ms</b> ITL.</td>
+    <td>Reasoning prompts concentrate MoE expert activation; the routing
+        advantage is only visible once the decode phase dominates the run.</td>
+  </tr>
+  <tr>
+    <td>Content is irrelevant at short outputs</td>
+    <td>At 128-token outputs all three datasets differ by &lt;2% in decode
+        throughput (167.9 / 166.2 / 166.5 tok/s at c4).</td>
+    <td>Short runs are prefill-dominated and the router averages out;
+        content sensitivity requires sequence lengths &gt;&gt; router horizon.</td>
+  </tr>
+  <tr>
+    <td>Concurrency saturation at ~c16</td>
+    <td>Decode throughput: 149 (c8) &rarr; 172 (c16) &rarr; 174 (c32) tok/s.
+        TTFT: 3.2s (c8) &rarr; 8.0s (c16) &rarr; 15.2s (c32).</td>
+    <td>GB10's 273 GB/s memory bandwidth saturates near c16; higher
+        concurrency only queues requests and inflates TTFT.</td>
+  </tr>
+  <tr>
+    <td>Energy efficiency of reasoning content</td>
+    <td>At 512 tokens, reasoning uses <b>~30% less energy per output token</b>
+        (440 vs 553 J/token, c1) and 24% lower EDP than text.</td>
+    <td>Concentrated expert routing lowers compute per token; efficiency is
+        the cleanest content-type signal on bandwidth-bound hardware.</td>
+  </tr>
+  <tr>
+    <td>Peak efficiency</td>
+    <td>5.1-5.3 tok/s/W at c32 for all datasets; 3.9 tok/s/W at c8.</td>
+    <td>Higher concurrency amortizes fixed overheads; the sweet spot for
+        efficiency (5+ tok/s/W) sits above the latency-acceptable range.</td>
+  </tr>
+  <tr>
+    <td>Long-generation hang &gt; c2</td>
+    <td>512-token generations at c4+ stalled server-side (Gated DeltaNet
+        linear-attention path, flagged experimental by vLLM).</td>
+    <td>Restart vLLM to recover. Keep long-output sweeps at c1-c2, or shorten
+        output tokens before raising concurrency.</td>
+  </tr>
+</table>
+
+<h3>Complete Throughput Matrix (tok/s decode)</h3>
+<p>
+  All measured decode throughput values across concurrency and output length.
+</p>
+<table>
+  <tr><th>Dataset</th><th>c1</th><th>c2</th><th>c4</th><th>c8</th><th>c16</th><th>c32</th></tr>
+  <tr>
+    <td><strong>Text 128-tok</strong></td>
+    <td>22.2</td><td>41.2</td><td>78.6</td><td>145.2</td><td>562.4</td><td>313.2</td>
+  </tr>
+  <tr>
+    <td><strong>Random 128-tok</strong></td>
+    <td>22.2</td><td>41.6</td><td>78.0</td><td>148.3</td><td>567.2</td><td>321.5</td>
+  </tr>
+  <tr>
+    <td><strong>Reasoning 128-tok</strong></td>
+    <td>22.3</td><td>41.5</td><td>77.7</td><td>147.0</td><td>558.8</td><td>305.3</td>
+  </tr>
+  <tr>
+    <td><strong>Text 512-tok</strong></td>
+    <td>63.4</td><td>78.0</td><td>145.6</td><td>149.2</td><td>328.1</td><td>310.2</td>
+  </tr>
+  <tr>
+    <td><strong>Random 512-tok</strong></td>
+    <td>55.0</td><td>79.3</td><td>148.4</td><td>150.6</td><td>325.9</td><td>315.7</td>
+  </tr>
+  <tr>
+    <td><strong>Reasoning 512-tok</strong></td>
+    <td>74.2</td><td>79.5</td><td>132.1</td><td>146.1</td><td>306.6</td><td>310.2</td>
+  </tr>
+</table>
+<p>
+  <strong>Key observations:</strong> (1) At 128-tok, all datasets converge at c8 (~147 tok/s) —
+  content irrelevant. (2) At 512-tok c1, reasoning is +17% vs text (74.2 vs 63.4).
+  (3) The 128 vs 512 gap narrows to ~2% at c8, confirming memory-bandwidth bound.
+  (4) Saturation at c16-32 shows diminishing returns — throughput peaks then plateaus.
+</p>
+
+<hr>
+
+<h2 id="fp8compare">FP8 vs NVFP4 Quantization Comparison</h2>
+<p>
+  Side-by-side comparison of <code>Qwen/Qwen3.6-35B-A3B-FP8</code> (8-bit MoE experts)
+  against the baseline <code>nvidia/Qwen3.6-35B-A3B-NVFP4</code> (4-bit MoE experts).
+  Same model architecture, same hardware, only quantization differs.
+</p>
+
+<table>
+  <tr><th>Property</th><th>NVFP4</th><th>FP8</th></tr>
+  <tr><td>Model ID</td><td><code>nvidia/Qwen3.6-35B-A3B-NVFP4</code></td><td><code>Qwen/Qwen3.6-35B-A3B-FP8</code></td></tr>
+  <tr><td>Weight Size</td><td>~35 GB</td><td>~37.5 GB</td></tr>
+  <tr><td>MoE Quantization</td><td>4-bit (ModelOpt)</td><td>8-bit (fine-grained FP8)</td></tr>
+  <tr><td>Attention Quantization</td><td>FP8</td><td>FP8</td></tr>
+  <tr><td>Load Format</td><td><code>fastsafetensors</code></td><td><code>safetensors</code></td></tr>
+  <tr><td>CUDA Graphs</td><td>Enabled</td><td>Disabled (<code>--enforce-eager</code>)</td></tr>
+  <tr><td>Launch Flag</td><td><code>./launch_vllm.sh</code></td><td><code>./launch_vllm.sh --model Qwen/Qwen3.6-35B-A3B-FP8 --load-format safetensors --enforce-eager</code></td></tr>
+</table>
+
+<div class="warn">
+  <strong>SM121 DeepGEMM Incompatibility:</strong> The FP8 model triggers a
+  DeepGEMM assertion error (<code>layout.hpp:76: Unknown recipe</code>) during
+  CUDA graph compilation on SM121. This requires <code>--enforce-eager</code>
+  (no CUDA graphs) and <code>VLLM_USE_DEEP_GEMM=0</code>. The FP8 model is
+  therefore <em>slower at high concurrency</em> where CUDA graph amortization
+  matters most. This is a vLLM/DeepGEMM bug, not a fundamental FP8 limitation.
+</div>
+
+<h3>128-tok Output: FP8 vs NVFP4 Decode Throughput (tok/s)</h3>
+<table>
+  <tr><th>Dataset</th><th>c1</th><th>c2</th><th>c4</th><th>c8</th></tr>
+  <tr>
+    <td><strong>FP8 text</strong></td>
+    <td><span class="metric">28.5</span></td>
+    <td><span class="metric">52.3</span></td>
+    <td><span class="metric">90.0</span></td>
+    <td>92.0</td>
+  </tr>
+  <tr>
+    <td>NVFP4 text</td>
+    <td>22.2</td>
+    <td>41.4</td>
+    <td>78.6</td>
+    <td><span class="metric">143.7</span></td>
+  </tr>
+  <tr>
+    <td><strong>FP8 random</strong></td>
+    <td><span class="metric">28.9</span></td>
+    <td><span class="metric">52.4</span></td>
+    <td><span class="metric">89.9</span></td>
+    <td>90.7</td>
+  </tr>
+  <tr>
+    <td>NVFP4 random</td>
+    <td>22.2</td>
+    <td>41.1</td>
+    <td>78.0</td>
+    <td><span class="metric">145.3</span></td>
+  </tr>
+  <tr>
+    <td><strong>FP8 reasoning</strong></td>
+    <td><span class="metric">27.2</span></td>
+    <td><span class="metric">48.5</span></td>
+    <td><span class="metric">89.6</span></td>
+    <td>90.5</td>
+  </tr>
+  <tr>
+    <td>NVFP4 reasoning</td>
+    <td>22.2</td>
+    <td>41.4</td>
+    <td>77.7</td>
+    <td><span class="metric">146.3</span></td>
+  </tr>
+</table>
+<p>
+  <strong>FP8/NVFP4 ratio:</strong> c1: 123-130%, c2: 117-127%, c4: 115%, c8: 62-64%.
+  FP8 is <b>15-30% faster</b> at c1-c4 because the Marlin MoE kernel handles
+  8-bit weights more efficiently (less dequantization overhead). At c8, NVFP4
+  wins by 56% because CUDA graphs amortize per-step overhead — FP8 lacks them
+  due to the DeepGEMM bug.
+</p>
+
+<h3>512-tok Output: FP8 vs NVFP4 Decode Throughput (tok/s)</h3>
+<table>
+  <tr><th>Dataset</th><th>c1</th><th>c2</th><th>c4</th><th>c8</th></tr>
+  <tr>
+    <td><strong>FP8 text</strong></td>
+    <td>27.4</td>
+    <td>55.7</td>
+    <td>91.6</td>
+    <td>92.5</td>
+  </tr>
+  <tr>
+    <td>NVFP4 text</td>
+    <td><span class="metric">63.4</span></td>
+    <td><span class="metric">78.0</span></td>
+    <td><span class="metric">145.6</span></td>
+    <td><span class="metric">149.2</span></td>
+  </tr>
+  <tr>
+    <td><strong>FP8 random</strong></td>
+    <td>29.8</td>
+    <td>54.6</td>
+    <td>90.8</td>
+    <td>93.1</td>
+  </tr>
+  <tr>
+    <td>NVFP4 random</td>
+    <td><span class="metric">55.0</span></td>
+    <td><span class="metric">79.3</span></td>
+    <td><span class="metric">148.4</span></td>
+    <td><span class="metric">150.6</span></td>
+  </tr>
+  <tr>
+    <td><strong>FP8 reasoning</strong></td>
+    <td>28.7</td>
+    <td>53.9</td>
+    <td>92.5</td>
+    <td>91.5</td>
+  </tr>
+  <tr>
+    <td>NVFP4 reasoning</td>
+    <td><span class="metric">74.2</span></td>
+    <td><span class="metric">79.5</span></td>
+    <td><span class="metric">132.1</span></td>
+    <td><span class="metric">146.1</span></td>
+  </tr>
+</table>
+<p>
+  <strong>FP8/NVFP4 ratio:</strong> c1: 39-54%, c2: 68-71%, c4: 61-70%, c8: 62-63%.
+  NVFP4 dominates at 512-tok because the decode phase is longer and CUDA graph
+  savings compound. FP8 throughput is nearly flat across c1-c8 (~27-93 tok/s)
+  while NVFP4 scales from 55 to 150 tok/s.
+</p>
+
+<h3>FP8 512-tok ITL (ms)</h3>
+<table>
+  <tr><th>Dataset</th><th>c1</th><th>c2</th><th>c4</th><th>c8</th></tr>
+  <tr><td>Text</td><td>35.9</td><td>35.3</td><td>42.0</td><td>42.1</td></tr>
+  <tr><td>Random</td><td>33.2</td><td>35.7</td><td>41.9</td><td>41.8</td></tr>
+  <tr><td>Reasoning</td><td>34.4</td><td>36.1</td><td>42.3</td><td>42.4</td></tr>
+</table>
+<p>
+  FP8 ITL is consistent across datasets (~33-42 ms), similar to NVFP4.
+  The lack of CUDA graphs does not significantly impact per-token latency
+  at single-digit concurrency.
+</p>
+
+<h3>Key Takeaways</h3>
+<ol>
+  <li><strong>FP8 is faster for low-concurrency, short-output workloads.</strong>
+      At 128-tok c1-c4, FP8 delivers 15-30% higher throughput than NVFP4.
+      The 8-bit MoE weights are processed more efficiently by the Marlin kernel.</li>
+  <li><strong>CUDA graphs are critical for high concurrency.</strong>
+      NVFP4's 56% advantage at c8 (128-tok) comes entirely from CUDA graph
+      amortization. FP8 with <code>--enforce-eager</code> cannot benefit.</li>
+  <li><strong>FP8 is the better choice for latency-sensitive single-user deployments</strong>
+      (c1-c2) where TTFT and ITL matter more than aggregate throughput.</li>
+  <li><strong>NVFP4 is the better choice for multi-user serving</strong> (c4+)
+      where CUDA graphs and memory efficiency dominate.</li>
+  <li><strong>Fix the DeepGEMM bug</strong> to unlock FP8's full potential.
+      With CUDA graphs enabled, FP8 would likely match or exceed NVFP4 at
+      all concurrency levels due to lower dequantization overhead.</li>
+</ol>
+
+<hr>
+
+<h2 id="routing">Router Profiling Findings</h2>
+<p>
+  Using vLLM's built-in <code>enable_return_routed_experts</code> feature, we captured the actual per-token top-8 expert IDs selected by the fused MoE kernels across all 40 layers for each dataset. This reveals how content type shapes routing behavior at the kernel level.
+</p>
+
+<h3>Methodology</h3>
+<p>
+  The <code>router_probe.py</code> script uses the offline <code>vllm.LLM</code> API with <code>enable_return_routed_experts=True</code>. The fused Marlin MoE kernel captures routed expert IDs as <code>uint8</code> tensors of shape <code>(n_tokens, 40 layers, 8 experts)</code> and returns them via <code>CompletionOutput.routed_experts</code>. The multi-turn probe <code>router_probe_multiturn.py</code> scales this to 50 sessions with up to 10 turns per session and 64 output tokens per prompt, pooling entropy across all sequences at each position index.
+</p>
+
+<h3>Routing Entropy (Normalized)</h3>
+<p>
+  Entropy measures how uniformly the 256 experts are used. Higher = more uniform distribution; lower = more concentrated on a few experts.
+</p>
+<table>
+  <tr><th>Dataset</th><th>Mean Entropy</th><th>Std</th><th>Interpretation</th></tr>
+  <tr><td>Text</td><td>0.799</td><td>0.029</td><td>Moderate concentration; natural language patterns guide router toward consistent expert subsets</td></tr>
+  <tr><td>Random</td><td>0.814</td><td>0.036</td><td>Highest entropy; no semantic structure forces broader expert activation across all layers</td></tr>
+  <tr><td>Reasoning</td><td>0.797</td><td>0.038</td><td>Lowest entropy; reasoning chains concentrate activation on fewer, more specialized experts</td></tr>
+</table>
+
+<h3>Per-Layer Entropy Pattern</h3>
+<p>
+  The entropy difference between reasoning and text varies significantly by layer depth:
+</p>
+<ul>
+  <li><strong>Layers 0-2:</strong> All datasets show highest entropy (most uniform routing). Reasoning is slightly higher than text.</li>
+  <li><strong>Layers 7-9:</strong> Reasoning drops significantly below text (entropy difference -0.022 to -0.028). These layers show the strongest content-dependent routing.</li>
+  <li><strong>Layer 16:</strong> Reasoning has HIGHER entropy than text (+0.044) — an inverted pattern suggesting this layer performs a different routing function for reasoning content.</li>
+  <li><strong>Layers 20-21:</strong> Reasoning drops again (-0.044, -0.034). Deep reasoning concentrates routing in these middle layers.</li>
+</ul>
+
+<h3>Expert Load Balance</h3>
+<p>
+  Load CV (coefficient of variation) measures how unevenly experts are loaded. Higher = more imbalance.
+</p>
+<table>
+  <tr><th>Dataset</th><th>Mean Load CV</th><th>Active Experts/Layer</th></tr>
+  <tr><td>Text</td><td>2.08</td><td>199.3 (of 256)</td></tr>
+  <tr><td>Random</td><td>2.02</td><td>215.7 (of 256)</td></tr>
+  <tr><td>Reasoning</td><td>2.08</td><td>196.9 (of 256)</td></tr>
+</table>
+<p>
+  Random uses 8-10% more experts per layer than text or reasoning, confirming that unstructured content forces broader activation. Text and reasoning have nearly identical load imbalance (CV ~2.08).
+</p>
+
+<h3>Expert Overlap Between Datasets</h3>
+<p>
+  Jaccard similarity of top-8 experts per layer reveals how similarly the datasets route:
+</p>
+<table>
+  <tr><th>Comparison</th><th>Mean Jaccard</th><th>Interpretation</th></tr>
+  <tr><td>Text vs Reasoning</td><td><strong>0.297</strong></td><td>Highest overlap — text and reasoning activate similar expert pathways</td></tr>
+  <tr><td>Text vs Random</td><td>0.137</td><td>Low overlap — random content diverges significantly from text routing</td></tr>
+  <tr><td>Random vs Reasoning</td><td>0.132</td><td>Lowest overlap — random and reasoning are maximally different</td></tr>
+</table>
+<p>
+  Only 3 experts (IDs 35, 64, 95) appear in the top-20 across all three datasets. These are likely "generalist" experts that handle common token patterns regardless of content type.
+</p>
+
+<h3>Consistent vs Content-Specific Experts</h3>
+<table>
+  <tr><th>Category</th><th>Expert IDs</th><th>Significance</th></tr>
+  <tr><td>Common to all 3</td><td>35, 64, 95</td><td>Generalist experts; backbone of all routing decisions</td></tr>
+  <tr><td>Text + Reasoning only</td><td>47, 85, 107, 147, 221</td><td>Shared by coherent content; likely handle structured semantic processing</td></tr>
+  <tr><td>Text only</td><td>13, 16, 36, 51, 52, 65, 72, 145, 154, 167, 189</td><td>11 experts specific to natural language patterns</td></tr>
+  <tr><td>Reasoning only</td><td>30, 54, 68, 100, 116, 124, 161, 178, 250</td><td>9 experts activated only by logical/proof structures</td></tr>
+  <tr><td>Random only</td><td>14, 20, 40, 44, 70, 87, 103, 108, 160, 162, 163, 209, 242</td><td>13 experts activated only by unstructured tokens</td></tr>
+</table>
+
+<h3>Dominant Expert Per Layer</h3>
+<p>
+  Many layers show the same dominant expert across all datasets (e.g., layer 2: expert 158, layer 9: expert 95, layer 16: expert 130, layer 21: expert 95, layer 24: expert 1, layer 33: expert 127, layer 38: expert 209). However, some layers show content-specific dominance:
+</p>
+<ul>
+  <li><strong>Layer 7:</strong> Text→expert 36 (9.6%), Random→expert 35 (3.5%), Reasoning→expert 116 (8.6%) — large divergence</li>
+  <li><strong>Layer 13:</strong> Text→expert 47 (8.1%), Random→expert 47 (6.1%), Reasoning→expert 130 (8.8%) — reasoning activates a different specialist</li>
+  <li><strong>Layer 18:</strong> Text→expert 13 (8.5%), Random→expert 13 (4.3%), Reasoning→expert 68 (6.9%) — text has strong specialist, reasoning uses different expert</li>
+</ul>
+
+<h3>Correlation with Performance</h3>
+<p>
+  The routing data explains the measured +17% reasoning decode advantage at 512-token outputs:
+</p>
+<ol>
+  <li><strong>Lower entropy = fewer active experts per token.</strong> Reasoning's concentrated routing (0.797 vs 0.799 text) means fewer expert weight pages need to be loaded from memory per decode step. On GB10's 273 GB/s unified memory, this directly reduces memory bandwidth pressure.</li>
+  <li><strong>Higher text-reasoning expert overlap (29.7%).</strong> When reasoning tokens share expert pathways with text, the model can pipeline expert computation more efficiently — similar expert activations share cached intermediate results.</li>
+  <li><strong>Layer-specific concentration.</strong> Reasoning's entropy drops most sharply in layers 7-9 and 20-21. These are likely the layers where logical chain processing concentrates computation, reducing per-token MoE overhead.</li>
+  <li><strong>Fewer unique experts activated.</strong> Reasoning uses 196.9 experts/layer vs random's 215.7 — 9% fewer distinct experts means less memory fragmentation and better cache locality.</li>
+</ol>
+
+<hr>
+
+<h2 id="multiturn">Multi-Turn &amp; Longer-Conversation Routing</h2>
+<p>
+  A scaled-up probe with 50 sessions per dataset, up to 10 turns per session, and 64 output tokens per prompt (vs 8 in the baseline). This reveals how routing evolves during longer decode sequences and across conversation turns.
+</p>
+
+<h3>Decode Position: Routing Diversifies During Generation</h3>
+<p>
+  As the model generates more tokens, routing entropy <em>increases</em> — the router explores more experts over the decode trajectory:
+</p>
+<table>
+  <tr><th>Dataset</th><th>Early (0-25%)</th><th>Mid (25-75%)</th><th>Late (75-100%)</th><th>Rise</th></tr>
+  <tr><td>Text</td><td>0.7980</td><td>0.8587</td><td>0.8705</td><td><strong>+9.1%</strong></td></tr>
+  <tr><td>Random</td><td>0.7663</td><td>0.8304</td><td>0.8549</td><td><strong>+11.6%</strong></td></tr>
+  <tr><td>Reasoning</td><td>0.7982</td><td>0.8544</td><td>0.8793</td><td><strong>+10.2%</strong></td></tr>
+</table>
+<p>
+  <strong>Decode trajectory (per-position entropy):</strong> All datasets start with lower entropy at the first token and diversify through the sequence. Random starts with dramatically lower entropy (0.532 vs 0.726 for text) but catches up by the end — a 57% increase vs 18% for text.
+</p>
+<table>
+  <tr><th>Position</th><th>Text</th><th>Reasoning</th><th>Random</th></tr>
+  <tr><td>First token</td><td>0.7263</td><td>0.7413</td><td>0.5317</td></tr>
+  <tr><td>Quarter</td><td>0.8313</td><td>0.8105</td><td>0.7928</td></tr>
+  <tr><td>Half</td><td>0.8501</td><td>0.8506</td><td>0.8175</td></tr>
+  <tr><td>Three-quarter</td><td>0.8604</td><td>0.8713</td><td>0.8368</td></tr>
+</table>
+<p>
+  <strong>Key insight:</strong> Random input triggers highly concentrated first-token routing (entropy 0.532) — the model falls back on a narrow expert set for nonsensical input, then rapidly diversifies. Text and reasoning maintain broad routing from the first token. Reasoning achieves the highest final entropy (0.871) — most diverse expert utilization during late decode.
+</p>
+
+<h3>Turn Depth: Routing Consolidates Across Conversations</h3>
+<p>
+  As conversations progress from turn 1 to turn 10, the router activates fewer experts per layer:
+</p>
+<table>
+  <tr><th>Dataset</th><th>Turn 1</th><th>Turn 3</th><th>Turn 6</th><th>Turn 10</th><th>Drop (1→6)</th></tr>
+  <tr><td>Text</td><td>0.846</td><td>0.850</td><td>0.849</td><td>0.832</td><td><strong>+0.3%</strong></td></tr>
+  <tr><td>Random</td><td>0.867</td><td>0.844</td><td>0.796</td><td>0.793</td><td><strong>-8.2%</strong></td></tr>
+  <tr><td>Reasoning</td><td>0.863</td><td>0.852</td><td>0.837</td><td>0.838</td><td><strong>-3.0%</strong></td></tr>
+</table>
+<p>
+  <strong>Key insight:</strong> Text routing is nearly flat across conversation depth (only +0.3% change to turn 6). Random has the steepest turn-depth effect (-8.2%), converging on a narrow expert set as conversation accumulates. Reasoning shows moderate consolidation (-3.0%) — more stable than random but not as flat as text.
+</p>
+
+<h3>Session-Level Routing Drift</h3>
+<p>
+  Within the same session, comparing turn 0 (first turn) vs turn 2 (third turn) expert selections:
+</p>
+<table>
+  <tr><th>Dataset</th><th>Sessions with 3+ turns</th><th>Mean Jaccard (Turn 0 vs 2)</th><th>Interpretation</th></tr>
+  <tr><td>Text</td><td>30</td><td>0.342</td><td>~34% of top-8 experts overlap — substantial routing shift within same conversation</td></tr>
+  <tr><td>Reasoning</td><td>30</td><td>0.298</td><td>Slightly lower overlap — reasoning chains cause more routing evolution</td></tr>
+  <tr><td>Random</td><td>30</td><td>0.231</td><td>Lowest overlap — random context causes the most routing instability</td></tr>
+</table>
+<p>
+  <strong>Key insight:</strong> Text has the most stable within-session routing (34% overlap), while random is least stable (23%). Reasoning sits in between (30%). This suggests that structured text creates more consistent routing patterns across turns, while random input causes the router to "wander" more.
+</p>
+
+<h3>Cross-Depth Expert Overlap</h3>
+<p>
+  Adjacent turn depths share significantly more experts than distant depths:
+</p>
+<ul>
+  <li><strong>Adjacent turns</strong> (depth N vs N+1): Jaccard ~0.65-0.77 (high overlap)</li>
+  <li><strong>Turn 1 vs Turn 10</strong>: Jaccard ~0.16-0.32 (low overlap)</li>
+  <li><strong>Random</strong> shows highest adjacent overlap (0.74-0.77) — its routing evolves most gradually</li>
+  <li><strong>Text</strong> shows lowest adjacent overlap at depth1 vs depth2 (0.36) — first turn is an outlier</li>
+</ul>
+
+<h3>Single-Turn vs Multi-Turn Entropy</h3>
+<p>
+  Comparing the baseline 8-token probe with the 64-token multi-turn probe:
+</p>
+<table>
+  <tr><th>Dataset</th><th>Single-turn (8 tok)</th><th>Multi-turn (64 tok)</th><th>Change</th></tr>
+  <tr><td>Text</td><td>0.799</td><td>0.855</td><td>+7.0%</td></tr>
+  <tr><td>Random</td><td>0.814</td><td>0.831</td><td>+2.0%</td></tr>
+  <tr><td>Reasoning</td><td>0.797</td><td>0.853</td><td>+7.0%</td></tr>
+</table>
+<p>
+  Longer generations explore more experts (higher entropy). Text and reasoning show equal improvement (+7.0%), while random shows minimal increase (+2.0%) — its short-output routing is already near maximum diversity.
+</p>
+
+<h3>Implications for the +17% Reasoning Advantage</h3>
+<p>
+  The multi-turn data reveals a nuanced routing story for reasoning's decode performance:
+</p>
+<ol>
+  <li><strong>Highest final decode entropy.</strong> Reasoning reaches 0.871 entropy by three-quarter decode (vs 0.860 for text, 0.837 for random). More diverse expert utilization in late decode means better GPU resource utilization during the computationally expensive final tokens.</li>
+  <li><strong>Lower first-token entropy than text.</strong> Reasoning starts at 0.741 (vs 0.726 for text) — slightly more concentrated routing at decode onset. This may reflect reasoning's structured token patterns enabling faster initial expert selection.</li>
+  <li><strong>Moderate turn-depth sensitivity.</strong> Reasoning drops 3.0% across turns (vs 8.2% for random). Its routing stays more diverse than random in deep conversations but converges more than text — a balanced trade-off between specialization and diversity.</li>
+  <li><strong>Intermediate session stability.</strong> Reasoning Jaccard=0.298 (vs text=0.342, random=0.231). Its within-session routing evolves more than text but less than random — structured reasoning chains create partially stable expert patterns across turns.</li>
+</ol>
+
+<hr>
+
+<h2>Troubleshooting</h2>
+<table>
+  <tr><th>Symptom</th><th>Fix</th></tr>
+  <tr>
+    <td>Model outputs <code>!!!!</code> or garbage</td>
+    <td>Wrong MoE backend. Ensure <code>--moe-backend marlin</code> and <code>VLLM_MARLIN_USE_ATOMIC_ADD=1</code> are set. Do not use CUTLASS on SM121.</td>
+  </tr>
+  <tr>
+    <td>OOM at startup</td>
+    <td>Drop page cache: <code>sudo sh -c 'sync; echo 3 &gt; /proc/sys/vm/drop_caches'</code>. Lower <code>--gpu-mem</code>.</td>
+  </tr>
+  <tr>
+    <td>AIPerf cannot reach server</td>
+    <td>Check <code>--url</code> matches the vLLM port. If using Docker networking, use the host IP, not <code>localhost</code>.</td>
+  </tr>
+  <tr>
+    <td>GPU telemetry shows no data</td>
+    <td>Ensure nvidia-smi works: <code>nvidia-smi</code>. The <code>pynvml</code> mode needs the nvidia-ml-py library (installed in the aiperf container).</td>
+  </tr>
+  <tr>
+    <td>Server takes &gt;10 minutes to start</td>
+    <td>Normal on first boot (weight download + CUDA graph compilation). Check <code>docker logs vllm-moe-gb10</code> for progress.</td>
+  </tr>
+</table>
+
+<hr>
+<p style="color: var(--text-muted); font-size: 0.85rem;">
+  Generated for the MOE Pareto Benchmark project. Hardware: NVIDIA GB10 (DGX Spark, SM121).
+  Model: nvidia/Qwen3.6-35B-A3B-NVFP4. Benchmark: AIPerf 0.12.0.
+</p>
+
+</body>
+</html>
