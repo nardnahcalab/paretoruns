@@ -1,0 +1,22 @@
+{
+  "model": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4",
+  "framework": "vllm",
+  "precision": "nvfp4",
+  "architecture": "Gated DeltaNet MoE",
+  "total_params": "30B",
+  "active_params_per_token": "3B",
+  "max_context_length": 1048576,
+  "hardware": "NVIDIA GB10 (DGX Spark, SM121)",
+  "sweep_config": {
+    "output_tokens_mean": 128,
+    "output_tokens_stddev": 32,
+    "concurrency_levels": [1, 2, 4, 8],
+    "requests_per_level": 50,
+    "warmup_requests": 3,
+    "random_seed": 42,
+    "datasets": ["text", "random", "reasoning"]
+  },
+  "timestamp": "20260811_115719",
+  "label": "nemotron-3.5-lightning-128",
+  "aiperf_version": "0.12.0"
+}

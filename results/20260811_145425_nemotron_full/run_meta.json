@@ -1,0 +1,24 @@
+{
+  "model": "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4",
+  "framework": "vllm",
+  "precision": "nvfp4",
+  "architecture": "Gated DeltaNet MoE",
+  "total_params": "30B",
+  "active_params_per_token": "3B",
+  "max_context_length": 1048576,
+  "container": "registry.dell.huggingface.co/enterprise-dell-inference-nvidia-nvidia-nemotron-3.5-lightning-30b-a3b-nvfp4-gb10:latest",
+  "hardware": "NVIDIA GB10 (DGX Spark, SM121)",
+  "timestamp": "20260811_145425",
+  "sweep_config": {
+    "output_tokens": [128, 512],
+    "concurrency_levels": [1, 2, 4, 8],
+    "requests_per_level": 50,
+    "datasets": ["text", "random", "reasoning"]
+  },
+  "phases_completed": {
+    "router_profiling_single": true,
+    "router_profiling_multi": true,
+    "pareto_sweep_128": true,
+    "pareto_sweep_512": true
+  }
+}

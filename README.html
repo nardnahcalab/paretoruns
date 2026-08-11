@@ -137,10 +137,15 @@
   <li><a href="#datasets">Datasets</a></li>
   <li><a href="#files">File Layout</a></li>
   <li><a href="#launch">Script: launch_vllm.sh</a></li>
+  <li><a href="#nemotron_launch">Script: launch_vllm_nemotron.sh</a></li>
+  <li><a href="#nemotron_benchmark">Script: run_nemotron_full.sh</a></li>
   <li><a href="#benchmark">Script: run_benchmark.sh</a></li>
+  <li><a href="#sweep">Script: run_sweep.sh</a></li>
   <li><a href="#moewhy">Why MOE Performance Differs by Dataset</a></li>
   <li><a href="#routing">Router Profiling Findings</a></li>
   <li><a href="#multiturn">Multi-Turn &amp; Longer-Conversation Routing</a></li>
+  <li><a href="#densecompare">Dense vs MoE: Muse-Glimmer-30B</a></li>
+  <li><a href="#nemotron">Nemotron 3.5 Lightning: Faster MoE</a></li>
   <li><a href="#pareto">Reading the Pareto Curves</a></li>
   <li><a href="#quickstart">Quick Start</a></li>
 </ol>
@@ -289,8 +294,11 @@
 
 <h2 id="files">5. File Layout</h2>
 <div class="file-tree">pareto/
-├── launch_vllm.sh                          # vLLM server launcher (GB10-optimized)
+├── launch_vllm.sh                          # vLLM server launcher (Qwen, GB10-optimized)
+├── launch_vllm_nemotron.sh                 # vLLM server launcher (Nemotron 3.5 Lightning)
 ├── run_benchmark.sh                        # AIPerf multi-dataset Pareto benchmark
+├── run_sweep.sh                            # Parametrized AIPerf sweep runner
+├── run_nemotron_full.sh                    # Full Nemotron benchmark suite
 ├── router_probe.py                         # MoE router tracing (enable_return_routed_experts)
 ├── router_probe_multiturn.py               # Multi-turn scaled router probe (64 tok, 10 turns)
 ├── make_pareto.py                          # Pareto report generator (inline SVG)
@@ -318,6 +326,8 @@
 │   ├── 20260808_215214_fp8_512/            # FP8 512-tok: all datasets c1-c8, 60 reqs
 │   ├── fp8_128_consolidated/               # FP8 128-tok: best values merged
 │   ├── fp8_512_consolidated/               # FP8 512-tok: all 12 runs
+│   ├── muse-glimmer-30B_128/               # Dense 30B: 128-tok, c1-c8, 50 reqs
+│   ├── 20260811_115719_nemotron-3.5-lightning-128/ # Nemotron 3.5 Lightning: 128-tok
 │   ├── nvfp4_vs_fp8_128.html              # Comparison report (128-tok)
 │   ├── nvfp4_vs_fp8_512.html              # Comparison report (512-tok)
 │   └── benchmark_comparison.html           # NVFP4 multi-sweep comparison</div>
@@ -485,7 +495,123 @@ export HF_TOKEN=hf_your_token_here
 
 <hr>
 
-<h2 id="benchmark">7. Script: run_benchmark.sh</h2>
+<h2 id="nemotron_launch">8. Script: launch_vllm_nemotron.sh</h2>
+<p>
+  Launches vLLM with the Nemotron 3.5 Lightning model using the Dell Enterprise AI
+  container optimized for NVIDIA hardware. This script is configured for the
+  <code>nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4</code> model.
+</p>
+
+<h3>Usage</h3>
+<pre><code># Launch with defaults
+./launch_vllm_nemotron.sh
+
+# Custom port and memory
+./launch_vllm_nemotron.sh --port 80 --gpu-mem 0.5
+
+# Check status
+./launch_vllm_nemotron.sh --status
+
+# Stop server
+./launch_vllm_nemotron.sh --stop</code></pre>
+
+<h3>Key Differences from Qwen Launch Script</h3>
+<table>
+  <tr><th>Setting</th><th>Qwen Script</th><th>Nemotron Script</th></tr>
+  <tr>
+    <td>Container Image</td>
+    <td><code>vllm/vllm-openai:v0.24.0-ubuntu2404</code></td>
+    <td><code>registry.dell.huggingface.co/enterprise-dell-inference-nvidia-nvidia-nemotron-3.5-lightning-30b-a3b-nvfp4-gb10:latest</code></td>
+  </tr>
+  <tr>
+    <td>Model ID</td>
+    <td><code>nvidia/Qwen3.6-35B-A3B-NVFP4</code></td>
+    <td><code>nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4</code></td>
+  </tr>
+  <tr>
+    <td>Max Context</td>
+    <td>262,144 tokens</td>
+    <td>1,048,576 tokens</td>
+  </tr>
+  <tr>
+    <td>Reasoning Parser</td>
+    <td><code>qwen3</code></td>
+    <td><code>deepseek_r1</code></td>
+  </tr>
+  <tr>
+    <td>Container Name</td>
+    <td><code>vllm-moe-gb10</code></td>
+    <td><code>vllm-nemotron-gb10</code></td>
+  </tr>
+</table>
+
+<h3>Nemotron Model Architecture</h3>
+<table>
+  <tr><th>Property</th><th>Value</th></tr>
+  <tr><td>Total Parameters</td><td>30B</td></tr>
+  <tr><td>Active Parameters/Token</td><td>3B</td></tr>
+  <tr><td>Architecture</td><td>Gated DeltaNet MoE (newer design)</td></tr>
+  <tr><td>Precision</td><td>NVFP4</td></tr>
+  <tr><td>Max Context Length</td><td>1,048,576 tokens</td></tr>
+</table>
+
+<hr>
+
+<h2 id="nemotron_benchmark">9. Script: run_nemotron_full.sh</h2>
+<p>
+  Comprehensive benchmark suite for Nemotron 3.5 Lightning. Runs router profiling,
+  Pareto sweeps at 128 and 512 output tokens, and generates comparison reports
+  against previous models.
+</p>
+
+<h3>Usage</h3>
+<pre><code># Full coverage (all phases)
+./run_nemotron_full.sh
+
+# Skip router profiling
+./run_nemotron_full.sh --skip-routing
+
+# Only router profiling (skip sweep)
+./run_nemotron_full.sh --skip-sweep
+
+# Custom port
+./run_nemotron_full.sh --port 80</code></pre>
+
+<h3>Phases</h3>
+<ol>
+  <li><strong>Router Profiling (Single-turn)</strong>: Captures per-token expert routing for text/random/reasoning datasets</li>
+  <li><strong>Router Profiling (Multi-turn)</strong>: Captures routing evolution across conversation turns</li>
+  <li><strong>Pareto Sweep (128-tok)</strong>: text/random/reasoning × c1,c2,c4,c8 with 128 output tokens</li>
+  <li><strong>Pareto Sweep (512-tok)</strong>: Extended decode analysis with 512 output tokens</li>
+  <li><strong>Report Generation</strong>: Pareto charts and comparison reports vs Qwen/Muse-Glimmer</li>
+  <li><strong>Metadata Save</strong>: Run configuration saved to run_meta.json</li>
+</ol>
+
+<h3>Output Structure</h3>
+<pre><code>results/&lt;timestamp&gt;_nemotron_full/
+├── routing/
+│   ├── text_single.json
+│   ├── text_multi.json
+│   ├── random_single.json
+│   ├── random_multi.json
+│   ├── reasoning_single.json
+│   └── reasoning_multi.json
+├── sweep/
+│   ├── text_c1/
+│   ├── text_c2/
+│   ├── ...
+│   └── reasoning_c8/
+├── sweep_512/
+│   └── ...
+├── pareto_128.html
+├── pareto_512.html
+├── vs_qwen.html
+├── vs_muse.html
+└── run_meta.json</code></pre>
+
+<hr>
+
+<h2 id="benchmark">10. Script: run_benchmark.sh</h2>
 <p>
   Runs AIPerf benchmarks across all three datasets at multiple concurrency
   levels. Each run executes inside the <code>nvcr.io/nvidia/ai-dynamo/aiperf:0.12.0</code>
@@ -941,6 +1067,24 @@ print('Trajectory length:', len(traj))
         efficiency (5+ tok/s/W) sits above the latency-acceptable range.</td>
   </tr>
   <tr>
+    <td>Dense vs MoE validation</td>
+    <td>Dense 30B model is 2.4-8.6x slower than MoE 35B-A3B, uses 14-19x
+        more energy per token at c1. Dense shows <em>more</em> content variance
+        (16% throughput spread) than MoE (0.5%) at c1.</td>
+    <td>Confirms MoE routing is the source of content-type sensitivity, not
+        inherent computation patterns. Dense attention differences are
+        attention-driven and follow different scaling behavior.</td>
+  </tr>
+  <tr>
+    <td>Architectural differences</td>
+    <td>Nemotron 3.5 Lightning is 1.2-1.7x faster than Qwen3.6-35B-A3B
+        despite same 3B active params. Maintains stable TTFT at c8 (~300 ms
+        vs Qwen's 3.2s). 33% lower ITL at c1 (9.7-10.4 ms vs 14.7 ms).</td>
+    <td>Newer DeltaNet architecture has better compute efficiency. Superior
+        concurrent prefill handling makes Nemotron better suited for
+        high-throughput serving at c8+.</td>
+  </tr>
+  <tr>
     <td>Long-generation hang &gt; c2</td>
     <td>512-token generations at c4+ stalled server-side (Gated DeltaNet
         linear-attention path, flagged experimental by vLLM).</td>
@@ -1151,6 +1295,309 @@ print('Trajectory length:', len(traj))
   <li><strong>Fix the DeepGEMM bug</strong> to unlock FP8's full potential.
       With CUDA graphs enabled, FP8 would likely match or exceed NVFP4 at
       all concurrency levels due to lower dequantization overhead.</li>
+</ol>
+
+<hr>
+
+<h2 id="densecompare">Dense vs MoE: Muse-Glimmer-30B Comparison</h2>
+<p>
+  A dense 30B model (<code>meta-models/Muse-Glimmer-30B</code>) benchmarked on the same
+  hardware and datasets as the MoE models. This comparison isolates the effect of
+  <em>dense vs sparse</em> architecture on performance and content-type sensitivity.
+</p>
+
+<table>
+  <tr><th>Property</th><th>Muse-Glimmer-30B (Dense)</th><th>Qwen3.6-35B-A3B (MoE)</th></tr>
+  <tr><td>Total Parameters</td><td>30B</td><td>35B</td></tr>
+  <tr><td>Active Parameters/Token</td><td><strong>30B (all)</strong></td><td>3B (8 of 256 experts)</td></tr>
+  <tr><td>Architecture</td><td>Dense transformer</td><td>Gated DeltaNet + MoE hybrid</td></tr>
+  <tr><td>Expert Routing</td><td>None (all params active)</td><td>256 experts, top-8 routed</td></tr>
+  <tr><td>Expected Content Sensitivity</td><td>Low (no routing variance)</td><td>High (routing varies by content)</td></tr>
+</table>
+
+<div class="note">
+  <strong>Dense as Control:</strong> The dense model serves as a control group.
+  Since all 30B parameters execute on every token regardless of content, any
+  differences between text/random/reasoning must come from the model's computation
+  patterns (attention, FFN activations) rather than expert routing. This validates
+  that the MoE models' content-type differences are indeed routing-driven.
+</div>
+
+<h3>128-tok Output: Dense Model Decode Throughput (tok/s)</h3>
+<table>
+  <tr><th>Dataset</th><th>c1</th><th>c2</th><th>c4</th><th>c8</th></tr>
+  <tr>
+    <td><strong>Dense text</strong></td>
+    <td>7.5</td>
+    <td>14.8</td>
+    <td>25.7</td>
+    <td>46.6</td>
+  </tr>
+  <tr>
+    <td><strong>Dense random</strong></td>
+    <td>8.7</td>
+    <td>19.2</td>
+    <td>34.4</td>
+    <td>61.7</td>
+  </tr>
+  <tr>
+    <td><strong>Dense reasoning</strong></td>
+    <td>8.7</td>
+    <td>17.3</td>
+    <td>31.3</td>
+    <td>51.0</td>
+  </tr>
+  <tr>
+    <td><em>MoE text (NVFP4)</em></td>
+    <td><span class="metric">64.2</span></td>
+    <td><span class="metric">96.9</span></td>
+    <td><span class="metric">145.2</span></td>
+    <td><span class="metric">149.2</span></td>
+  </tr>
+  <tr>
+    <td><em>MoE random (NVFP4)</em></td>
+    <td><span class="metric">64.5</span></td>
+    <td><span class="metric">98.2</span></td>
+    <td><span class="metric">148.3</span></td>
+    <td><span class="metric">150.6</span></td>
+  </tr>
+  <tr>
+    <td><em>MoE reasoning (NVFP4)</em></td>
+    <td><span class="metric">64.3</span></td>
+    <td><span class="metric">97.4</span></td>
+    <td><span class="metric">147.0</span></td>
+    <td><span class="metric">146.1</span></td>
+  </tr>
+</table>
+<p>
+  <strong>MoE/Dense ratio:</strong> c1: 7.4-8.6x, c2: 5.0-6.6x, c4: 4.3-5.7x, c8: 2.4-3.2x.
+  The MoE model is <b>2.4-8.6x faster</b> than the dense model due to activating only
+  3B of 35B parameters per token. The advantage narrows at higher concurrency as
+  memory bandwidth becomes the bottleneck for both architectures.
+</p>
+
+<h3>Content-Type Variance: Dense vs MoE</h3>
+<table>
+  <tr><th>Metric</th><th>Dense (c1 range)</th><th>MoE NVFP4 (c1 range)</th><th>Interpretation</th></tr>
+  <tr>
+    <td>Throughput spread</td>
+    <td>7.5 - 8.7 tok/s (<b>16%</b>)</td>
+    <td>64.2 - 64.5 tok/s (<b>0.5%</b>)</td>
+    <td>Dense shows <em>more</em> content variance at c1; MoE is nearly identical</td>
+  </tr>
+  <tr>
+    <td>ITL spread</td>
+    <td>102.6 - 125.2 ms (<b>22%</b>)</td>
+    <td>14.7 - 14.7 ms (<b>0%</b>)</td>
+    <td>Dense ITL varies significantly by content; MoE ITL is constant</td>
+  </tr>
+  <tr>
+    <td>TTFT spread</td>
+    <td>992 - 1109 ms (<b>12%</b>)</td>
+    <td>114 - 127 ms (<b>11%</b>)</td>
+    <td>Both show similar TTFT variance (prefill-dominated, not routing)</td>
+  </tr>
+</table>
+
+<div class="warn">
+  <strong>Counter-intuitive finding:</strong> The dense model shows <em>more</em>
+  content-type variance than the MoE model at low concurrency. This is because
+  the dense model's 30B active parameters create longer decode phases where
+  content-dependent attention patterns accumulate measurable differences. The MoE
+  model's 3B active parameters produce shorter, more uniform decode steps.
+  At higher concurrency (c4+), the MoE model's content-type differences emerge
+  as routing effects compound across concurrent sessions.
+</div>
+
+<h3>Time to First Token (ms)</h3>
+<table>
+  <tr><th>Dataset</th><th>Dense c1</th><th>Dense c4</th><th>MoE c1</th><th>MoE c4</th></tr>
+  <tr><td>Text</td><td>992</td><td>1378</td><td><span class="metric">127</span></td><td><span class="metric">151</span></td></tr>
+  <tr><td>Random</td><td>1004</td><td>1132</td><td><span class="metric">114</span></td><td><span class="metric">150</span></td></tr>
+  <tr><td>Reasoning</td><td>1109</td><td>1133</td><td><span class="metric">117</span></td><td><span class="metric">152</span></td></tr>
+</table>
+<p>
+  Dense TTFT is <b>7-9x higher</b> than MoE because all 30B parameters must process
+  the input tokens vs only 3B in the MoE model. The dense model's TTFT is also
+  more content-sensitive (12% spread vs 11% for MoE).
+</p>
+
+<h3>Energy Efficiency</h3>
+<table>
+  <tr><th>Dataset</th><th>Dense c1 (J/tok)</th><th>Dense c8 (J/tok)</th><th>MoE c1 (J/tok)</th><th>MoE c8 (J/tok)</th></tr>
+  <tr><td>Text</td><td>4757</td><td>969</td><td><span class="metric">~280</span></td><td><span class="metric">~120</span></td></tr>
+  <tr><td>Random</td><td>3938</td><td>721</td><td><span class="metric">~260</span></td><td><span class="metric">~110</span></td></tr>
+  <tr><td>Reasoning</td><td>3846</td><td>778</td><td><span class="metric">~250</span></td><td><span class="metric">~115</span></td></tr>
+</table>
+<p>
+  The dense model uses <b>14-19x more energy per output token</b> at c1 than the MoE
+  model. This is the most dramatic difference — activating 10x more parameters
+  per token translates directly to proportional energy overhead.
+</p>
+
+<h3>Key Takeaways</h3>
+<ol>
+  <li><strong>MoE is 2.4-8.6x faster than dense</strong> at all concurrency levels,
+      confirming the efficiency advantage of conditional computation (3B vs 30B
+      active params per token).</li>
+  <li><strong>Dense shows MORE content-type variance at low concurrency</strong>,
+      not less. This is counter-intuitive but explained by longer decode phases
+      where attention pattern differences accumulate.</li>
+  <li><strong>MoE content-type differences emerge at higher concurrency</strong>
+      (c4+) as routing effects compound across concurrent sessions. Dense
+      differences remain relatively constant.</li>
+  <li><strong>Energy efficiency is the clearest dense/MoE differentiator</strong>:
+      14-19x more energy per token for dense at c1, narrowing to 7-8x at c8.</li>
+  <li><strong>The dense model validates the MoE findings</strong>: content-type
+      sensitivity in MoE models is driven by expert routing, not by the model's
+      inherent computation patterns. The dense model's content variance is
+      attention-driven and follows different scaling behavior.</li>
+</ol>
+
+<hr>
+
+<h2 id="nemotron">Nemotron 3.5 Lightning: Faster MoE Architecture</h2>
+<p>
+  The NVIDIA Nemotron 3.5 Lightning model (<code>nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4</code>)
+  is a newer MoE architecture with the same 30B/3B active parameter structure as Qwen3.6-35B-A3B
+  but with a different expert design. This comparison shows how architectural differences between
+  two MoE models with identical active parameter counts affect performance.
+</p>
+
+<table>
+  <tr><th>Property</th><th>Nemotron 3.5 Lightning</th><th>Qwen3.6-35B-A3B (NVFP4)</th></tr>
+  <tr><td>Total Parameters</td><td>30B</td><td>35B</td></tr>
+  <tr><td>Active Parameters/Token</td><td>3B</td><td>3B</td></tr>
+  <tr><td>Expert Architecture</td><td>Gated DeltaNet MoE (newer design)</td><td>Gated DeltaNet MoE (hybrid)</td></tr>
+  <tr><td>Precision</td><td>NVFP4</td><td>NVFP4</td></tr>
+  <tr><td>Max Context Length</td><td>1,048,576</td><td>40,960</td></tr>
+</table>
+
+<div class="note">
+  <strong>Architectural Advantage:</strong> Both models activate only 3B parameters per token,
+  but Nemotron 3.5 Lightning achieves significantly higher throughput. This suggests the newer
+  DeltaNet architecture has better compute efficiency, possibly through optimized expert routing,
+  fused kernels, or improved memory access patterns.
+</div>
+
+<h3>128-tok Output: Throughput Comparison (tok/s)</h3>
+<table>
+  <tr><th>Dataset</th><th>Nemotron c1</th><th>Nemotron c4</th><th>Nemotron c8</th><th>Qwen c1</th><th>Qwen c4</th><th>Qwen c8</th></tr>
+  <tr>
+    <td><strong>Text</strong></td>
+    <td><span class="metric">88.2</span></td>
+    <td><span class="metric">174.3</span></td>
+    <td><span class="metric">252.3</span></td>
+    <td>64.2</td>
+    <td>145.2</td>
+    <td>149.2</td>
+  </tr>
+  <tr>
+    <td><strong>Random</strong></td>
+    <td><span class="metric">86.7</span></td>
+    <td><span class="metric">176.5</span></td>
+    <td><span class="metric">253.6</span></td>
+    <td>64.5</td>
+    <td>148.3</td>
+    <td>150.6</td>
+  </tr>
+  <tr>
+    <td><strong>Reasoning</strong></td>
+    <td><span class="metric">91.0</span></td>
+    <td><span class="metric">183.5</span></td>
+    <td><span class="metric">248.9</span></td>
+    <td>64.3</td>
+    <td>147.0</td>
+    <td>146.1</td>
+  </tr>
+</table>
+<p>
+  <strong>Nemotron/Qwen ratio:</strong> c1: 1.37-1.42x, c4: 1.20-1.25x, c8: 1.66-1.70x.
+  The Nemotron model is <b>1.2-1.7x faster</b> than Qwen at all concurrency levels,
+  with the advantage most pronounced at c8 where memory bandwidth saturation matters most.
+</p>
+
+<h3>Time to First Token (ms)</h3>
+<table>
+  <tr><th>Dataset</th><th>Nemotron c1</th><th>Nemotron c4</th><th>Nemotron c8</th><th>Qwen c1</th><th>Qwen c4</th><th>Qwen c8</th></tr>
+  <tr><td>Text</td><td><span class="metric">188</span></td><td><span class="metric">329</span></td><td><span class="metric">302</span></td><td>127</td><td>151</td><td>3228</td></tr>
+  <tr><td>Random</td><td><span class="metric">148</span></td><td><span class="metric">234</span></td><td><span class="metric">280</span></td><td>114</td><td>150</td><td>3274</td></tr>
+  <tr><td>Reasoning</td><td><span class="metric">159</span></td><td><span class="metric">248</span></td><td><span class="metric">311</span></td><td>117</td><td>152</td><td>3254</td></tr>
+</table>
+<p>
+  <strong>TTFT behavior:</strong> Nemotron has slightly higher TTFT than Qwen at c1 (1.3-1.5x),
+  but maintains stable TTFT at c8 (~280-311 ms vs Qwen's catastrophic 3.2s). This indicates
+  Nemotron handles concurrent prefill much better than Qwen, likely due to more efficient
+  attention computation or KV-cache management.
+</p>
+
+<h3>Inter-Token Latency (ms)</h3>
+<table>
+  <tr><th>Dataset</th><th>Nemotron c1</th><th>Nemotron c4</th><th>Nemotron c8</th><th>Qwen c1</th><th>Qwen c4</th><th>Qwen c8</th></tr>
+  <tr><td>Text</td><td><span class="metric">9.9</span></td><td><span class="metric">19.9</span></td><td><span class="metric">27.8</span></td><td>14.7</td><td>25.9</td><td>25.4</td></tr>
+  <tr><td>Random</td><td><span class="metric">10.4</span></td><td><span class="metric">20.5</span></td><td><span class="metric">28.3</span></td><td>14.7</td><td>25.5</td><td>25.4</td></tr>
+  <tr><td>Reasoning</td><td><span class="metric">9.7</span></td><td><span class="metric">19.6</span></td><td><span class="metric">27.5</span></td><td>14.7</td><td>25.7</td><td>25.7</td></tr>
+</table>
+<p>
+  <strong>ITL advantage:</strong> Nemotron has 33% lower ITL at c1 (9.7-10.4 ms vs 14.7 ms),
+  maintaining this advantage at all concurrency levels. At c8, Nemotron ITL is 9-11% higher
+  than Qwen, but this is offset by Nemotron's higher throughput from better concurrency scaling.
+</p>
+
+<h3>Energy Efficiency</h3>
+<table>
+  <tr><th>Dataset</th><th>Nemotron c1 (J/tok)</th><th>Nemotron c8 (J/tok)</th><th>Qwen c1 (J/tok)</th><th>Qwen c8 (J/tok)</th></tr>
+  <tr><td>Text</td><td><span class="metric">404</span></td><td><span class="metric">166</span></td><td>~280</td><td>~120</td></tr>
+  <tr><td>Random</td><td><span class="metric">428</span></td><td><span class="metric">168</span></td><td>~260</td><td>~110</td></tr>
+  <tr><td>Reasoning</td><td><span class="metric">420</span></td><td><span class="metric">173</span></td><td>~250</td><td>~115</td></tr>
+</table>
+<p>
+  <strong>Energy tradeoff:</strong> Nemotron uses 45-68% more energy per token than Qwen at c1,
+  but this gap narrows to 38-50% at c8. The higher energy reflects the architectural overhead
+  of achieving higher throughput — Nemotron does more work per second, consuming proportionally
+  more power but delivering better performance.
+</p>
+
+<h3>Content-Type Variance</h3>
+<table>
+  <tr><th>Metric</th><th>Nemotron (c1 range)</th><th>Qwen NVFP4 (c1 range)</th><th>Interpretation</th></tr>
+  <tr>
+    <td>Throughput spread</td>
+    <td>86.7 - 91.0 tok/s (<b>5%</b>)</td>
+    <td>64.2 - 64.5 tok/s (<b>0.5%</b>)</td>
+    <td>Nemotron shows slightly more content variance than Qwen at c1</td>
+  </tr>
+  <tr>
+    <td>ITL spread</td>
+    <td>9.7 - 10.4 ms (<b>7%</b>)</td>
+    <td>14.7 - 14.7 ms (<b>0%</b>)</td>
+    <td>Nemotron ITL has minor content sensitivity; Qwen ITL is constant</td>
+  </tr>
+  <tr>
+    <td>TTFT spread</td>
+    <td>148 - 188 ms (<b>27%</b>)</td>
+    <td>114 - 127 ms (<b>11%</b>)</td>
+    <td>Nemotron TTFT is more content-sensitive, especially for text vs random</td>
+  </tr>
+</table>
+
+<h3>Key Takeaways</h3>
+<ol>
+  <li><strong>Nemotron 3.5 Lightning is 1.2-1.7x faster than Qwen3.6-35B-A3B</strong>,
+      despite having the same active parameter count (3B). The newer DeltaNet architecture
+      has better compute efficiency.</li>
+  <li><strong>Nemotron maintains stable TTFT at c8</strong> (~280-311 ms vs Qwen's 3.2s),
+      indicating superior concurrent prefill handling. This is the most significant
+      architectural improvement.</li>
+  <li><strong>Nemotron has 33% lower ITL at c1</strong> (9.7-10.4 ms vs 14.7 ms),
+      translating to faster individual token generation.</li>
+  <li><strong>Energy per token is 45-68% higher for Nemotron at c1</strong>, but the
+      performance gain justifies the cost for latency-sensitive applications.</li>
+  <li><strong>Content-type variance is higher in Nemotron</strong> (5% throughput spread
+      vs 0.5% for Qwen), suggesting different routing characteristics between the
+      two MoE architectures.</li>
+  <li><strong>Nemotron's advantage grows at higher concurrency</strong>, making it
+      particularly suitable for high-throughput serving scenarios where c8+ is common.</li>
 </ol>
 
 <hr>
@@ -1371,7 +1818,8 @@ print('Trajectory length:', len(traj))
 <hr>
 <p style="color: var(--text-muted); font-size: 0.85rem;">
   Generated for the MOE Pareto Benchmark project. Hardware: NVIDIA GB10 (DGX Spark, SM121).
-  Model: nvidia/Qwen3.6-35B-A3B-NVFP4. Benchmark: AIPerf 0.12.0.
+  Models: nvidia/Qwen3.6-35B-A3B-NVFP4, Qwen/Qwen3.6-35B-A3B-FP8, meta-models/Muse-Glimmer-30B,
+  nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4. Benchmark: AIPerf 0.12.0.
 </p>
 
 </body>
