@@ -63,6 +63,11 @@ def extract(profile):
             conc = ph.get("concurrency")
             break
 
+    # Calculate actual decode speed (tokens during decode phase only)
+    osl = pick("output_sequence_length", "avg")
+    decode_dur = pick("decode_duration", "avg")
+    decode_speed = (osl / (decode_dur / 1000.0)) if osl and decode_dur and decode_dur > 0 else None
+
     return {
         "concurrency": conc,
         "req_throughput": pick("request_throughput", "avg"),
@@ -70,11 +75,14 @@ def extract(profile):
         "ttft_ms": pick("time_to_first_token", "avg"),
         "itl_ms": pick("inter_token_latency", "avg"),
         "decode_tok_s": pick("output_token_throughput", "avg"),
+        "decode_speed": decode_speed,  # Actual tok/s during decode phase
+        "decode_duration_ms": decode_dur,
         "decode_tok_s_user": pick("output_token_throughput_per_user", "avg"),
         "osl": pick("output_sequence_length", "avg"),
         "isl": pick("input_sequence_length", "avg"),
         "power_w": pick("nvidia_average_gpu_power", "avg"),
         "tps_per_watt": pick("nvidia_output_tps_per_watt", "avg"),
+        "prefill_tok_s": pick("prefill_throughput_per_user", "avg"),
     }
 
 
@@ -102,55 +110,97 @@ def build_dataset(bench_dir, dataset):
 
 
 def svg_curves(datasets_data):
-    """Render throughput-vs-latency Pareto curves as SVG."""
+    """Render combined throughput-vs-latency Pareto curves as SVG."""
     plots = []
-    W, H, ML, MT, MB, MR = 620, 380, 62, 28, 52, 20
-    for i, (ds, rows) in enumerate(datasets_data.items()):
-        x_label = "Request Latency (ms)"
-        x_key = "req_latency_ms"
-        y_label = "Throughput (req/s)"
-        y_key = "req_throughput"
+    W, H, ML, MT, MB, MR = 700, 420, 72, 32, 56, 24
 
-        points = [(r[x_key], r[y_key]) for r in rows if r[x_key] is not None and r[y_key] is not None]
-        if len(points) < 2:
+    x_label = "Request Latency (ms) - end-to-end time per request"
+    x_key = "req_latency_ms"
+    y_label = "Decode Speed (tok/s) - tokens generated per second during decode"
+    y_key = "decode_speed"
+
+    # Collect all points across datasets
+    all_points = []
+    for ds, rows in datasets_data.items():
+        for r in rows:
+            if r[x_key] is not None and r[y_key] is not None:
+                all_points.append((r[x_key], r[y_key], ds, int(r.get("concurrency") or 0),
+                                   r.get("isl", 0), r.get("osl", 0), r.get("ttft_ms", 0)))
+
+    if len(all_points) < 2:
+        return plots
+
+    xmin = min(p[0] for p in all_points) * 0.85
+    xmax = max(p[0] for p in all_points) * 1.15
+    ymin = 0
+    ymax = max(p[1] for p in all_points) * 1.2
+
+    def sx(v):
+        return ML + (v - xmin) / (xmax - xmin) * (W - ML - MR)
+
+    def sy(v):
+        return H - MB - (v - ymin) / (ymax - ymin) * (H - MB - MT)
+
+    body = []
+    body.append(f'<rect x="0" y="0" width="{W}" height="{H}" fill="#ffffff" stroke="#cccccc"/>')
+
+    # Grid lines
+    for g in range(1, 7):
+        gy = H - MB - g / 7 * (H - MB - MT)
+        body.append(f'<line x1="{ML}" y1="{gy:.1f}" x2="{W - MR}" y2="{gy:.1f}" stroke="#ececec" stroke-dasharray="3,3"/>')
+
+    # X-axis tick marks and labels
+    x_range = xmax - xmin
+    x_step = x_range / 5
+    for i in range(6):
+        xv = xmin + i * x_step
+        tx = sx(xv)
+        body.append(f'<line x1="{tx:.1f}" y1="{H - MB}" x2="{tx:.1f}" y2="{H - MB + 5}" stroke="#666"/>')
+        body.append(f'<text x="{tx:.1f}" y="{H - MB + 18}" text-anchor="middle" font-size="11" fill="#444">{xv:.0f}</text>')
+
+    # Y-axis tick marks and labels
+    y_range = ymax - ymin
+    y_step = y_range / 6
+    for i in range(7):
+        yv = ymin + i * y_step
+        ty = sy(yv)
+        body.append(f'<line x1="{ML - 5}" y1="{ty:.1f}" x2="{ML}" y2="{ty:.1f}" stroke="#666"/>')
+        body.append(f'<text x="{ML - 8}" y="{ty:.1f}" text-anchor="end" font-size="11" fill="#444" dominant-baseline="middle">{yv:.1f}</text>')
+
+    # Axes
+    body.append(f'<line x1="{ML}" y1="{H - MB}" x2="{W - MR}" y2="{H - MB}" stroke="#333" stroke-width="1.5"/>')
+    body.append(f'<line x1="{ML}" y1="{MT}" x2="{ML}" y2="{H - MB}" stroke="#333" stroke-width="1.5"/>')
+
+    # Axis labels (larger, bold)
+    body.append(f'<text x="{(ML + W - MR) / 2:.0f}" y="{H - 8}" text-anchor="middle" font-size="14" font-weight="bold" fill="#222">{html.escape(x_label)}</text>')
+    body.append(f'<text x="16" y="{(MT + H - MB) / 2:.0f}" text-anchor="middle" font-size="14" font-weight="bold" fill="#222" transform="rotate(-90 16 {(MT + H - MB) / 2:.0f})">{html.escape(y_label)}</text>')
+
+    # Title
+    body.append(f'<text x="{(ML + W - MR) / 2:.0f}" y="{20}" text-anchor="middle" font-size="16" font-weight="bold" fill="#111">Pareto Curve: Decode Speed vs Latency</text>')
+
+    # Draw lines and points per dataset
+    for ds, rows in datasets_data.items():
+        pts = [(r[x_key], r[y_key], int(r.get("concurrency") or 0), r.get("isl", 0), r.get("osl", 0), r.get("ttft_ms", 0))
+               for r in rows if r[x_key] is not None and r[y_key] is not None]
+        if len(pts) < 2:
             continue
-
-        xmin = min(p[0] for p in points) * 0.9
-        xmax = max(p[0] for p in points) * 1.1
-        ymin = 0
-        ymax = max(p[1] for p in points) * 1.15
-
-        def sx(v):
-            return ML + (v - xmin) / (xmax - xmin) * (W - ML - MR)
-
-        def sy(v):
-            return H - MB - (v - ymin) / (ymax - ymin) * (H - MB - MT)
-
         color = COLORS[ds]
-        body = []
-        body.append(f'<rect x="0" y="0" width="{W}" height="{H}" fill="#ffffff" stroke="#cccccc"/>')
-        # grid lines
-        for g in range(1, 6):
-            gy = H - MB - g / 6 * (H - MB - MT)
-            body.append(f'<line x1="{ML}" y1="{gy:.1f}" x2="{W - MR}" y2="{gy:.1f}" stroke="#ececec"/>')
-        # axes
-        body.append(f'<line x1="{ML}" y1="{H - MB}" x2="{W - MR}" y2="{H - MB}" stroke="#666"/>')
-        body.append(f'<line x1="{ML}" y1="{MT}" x2="{ML}" y2="{H - MB}" stroke="#666"/>')
-        # x labels
-        body.append(f'<text x="{(ML + W - MR) / 2:.0f}" y="{H - MB + 24}" text-anchor="middle" font-size="13">{html.escape(x_label)}</text>')
-        # y label (rotated)
-        body.append(f'<text x="{14}" y="{(MT + H - MB) / 2:.0f}" text-anchor="middle" font-size="13" transform="rotate(-90 14 {(MT + H - MB) / 2:.0f})">{html.escape(y_label)}</text>')
-        # title
-        body.append(f'<text x="{(ML + W - MR) / 2:.0f}" y="{18}" text-anchor="middle" font-size="15" font-weight="bold">{ds} dataset</text>')
-        # data line + points
-        pts_s = " ".join(f"{sx(p[0]):.1f},{sy(p[1]):.1f}" for p in points)
-        body.append(f'<polyline points="{pts_s}" fill="none" stroke="{color}" stroke-width="2.5"/>')
-        for p in points:
-            body.append(f'<circle cx="{sx(p[0]):.1f}" cy="{sy(p[1]):.1f}" r="5" fill="{color}" stroke="#fff" stroke-width="1.5"/>')
-            conc = int(rows[points.index(p)].get("concurrency") or 0)
-            body.append(f'<text x="{sx(p[0]):.1f}" y="{sy(p[1]) - 9:.1f}" text-anchor="middle" font-size="11">c{conc}</text>')
+        pts_s = " ".join(f"{sx(p[0]):.1f},{sy(p[1]):.1f}" for p in pts)
+        body.append(f'<polyline points="{pts_s}" fill="none" stroke="{color}" stroke-width="2.5" stroke-linejoin="round"/>')
+        for px, py, conc, isl, osl, ttft in pts:
+            body.append(f'<circle cx="{sx(px):.1f}" cy="{sy(py):.1f}" r="6" fill="{color}" stroke="#fff" stroke-width="2"/>')
+            body.append(f'<text x="{sx(px):.1f}" y="{sy(py) - 11:.1f}" text-anchor="middle" font-size="11" fill="{color}" font-weight="bold">c{conc}</text>')
 
-        plots.append(f"<svg width=\"{W}\" height=\"{H}\" xmlns=\"http://www.w3.org/2000/svg\">{''.join(body)}</svg>")
+    # Legend (bottom-right)
+    lx = W - MR - 160
+    ly = MT + 16
+    body.append(f'<rect x="{lx - 8}" y="{ly - 14}" width="168" height="{len(DATASETS) * 22 + 8}" fill="#fff" stroke="#ddd" rx="4"/>')
+    for i, ds in enumerate(DATASETS):
+        y = ly + i * 22
+        body.append(f'<rect x="{lx}" y="{y - 5}" width="14" height="10" fill="{COLORS[ds]}" rx="2"/>')
+        body.append(f'<text x="{lx + 20}" y="{y + 3}" font-size="12" fill="#333" font-weight="600">{ds}</text>')
+
+    plots.append(f"<svg width=\"{W}\" height=\"{H}\" xmlns=\"http://www.w3.org/2000/svg\">{''.join(body)}</svg>")
     return plots
 
 
@@ -201,17 +251,25 @@ def svg_gpu_chart(datasets_data):
 
 def svg_table(datasets_data):
     """HTML table of key metrics."""
-    out = ["<table class=\"metrics\"><thead><tr><th>Dataset</th><th>Conc</th>"
-           "<th>Req/s</th><th>Latency (ms)</th><th>TTFT (ms)</th><th>ITL (ms)</th>"
-           "<th>Decode tok/s</th><th>ISL</th><th>OSL</th><th>Power (W)</th><th>tok/s/W</th></tr></thead><tbody>"]
+    out = ["<table class=\"metrics\"><thead><tr>"
+           "<th>Dataset</th><th>Conc</th>"
+           "<th>ISL</th><th>OSL</th>"
+           "<th>TTFT (ms)</th><th>ITL (ms)</th>"
+           "<th>E2E Latency (ms)</th><th>Decode Phase (ms)</th>"
+           "<th>Decode Speed (tok/s)</th><th>Req/s</th>"
+           "<th>Power (W)</th><th>tok/s/W</th>"
+           "</tr></thead><tbody>"]
     for ds, rows in datasets_data.items():
         for r in rows:
+            decode_speed = r.get('decode_speed')
+            decode_speed_str = f"{decode_speed:.1f}" if decode_speed else "N/A"
             out.append(
                 f"<tr><td>{ds}</td><td>c{r['concurrency']}</td>"
-                f"<td>{r['req_throughput']:.2f}</td><td>{r['req_latency_ms']:.0f}</td>"
+                f"<td>{r['isl']:.0f}</td><td>{r['osl']:.0f}</td>"
                 f"<td>{r['ttft_ms']:.1f}</td><td>{r['itl_ms']:.2f}</td>"
-                f"<td>{r['decode_tok_s']:.1f}</td><td>{r['isl']:.0f}</td>"
-                f"<td>{r['osl']:.0f}</td><td>{r['power_w']:.0f}</td>"
+                f"<td>{r['req_latency_ms']:.0f}</td><td>{r.get('decode_duration_ms', 0):.0f}</td>"
+                f"<td>{decode_speed_str}</td><td>{r['req_throughput']:.2f}</td>"
+                f"<td>{r['power_w']:.0f}</td>"
                 f"<td>{r['tps_per_watt']:.2f}</td></tr>"
             )
     out.append("</tbody></table>")
@@ -270,21 +328,77 @@ def build_report(bench_dir, out_path):
  table.metrics th {{ background: #f0f0f0; }}
  table.metrics td:first-child, table.metrics td:nth-child(2) {{ text-align: left; font-weight: 600; }}
  .note {{ font-size: 12px; color: #666; margin-top: 24px; }}
+ .definitions {{ background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px; margin: 16px 0; }}
+ .definitions h3 {{ margin: 0 0 12px 0; font-size: 15px; }}
+ .definitions dl {{ margin: 0; }}
+ .definitions dt {{ font-weight: 600; font-size: 13px; margin-top: 8px; }}
+ .definitions dd {{ margin: 0 0 0 16px; font-size: 12px; color: #555; }}
+ .example {{ background: #e8f4e8; border-left: 3px solid #4caf50; padding: 8px 12px; margin: 8px 0; font-size: 12px; }}
+ .note-box {{ background: #fff3cd; border-left: 3px solid #ffc107; padding: 8px 12px; margin: 12px 0; font-size: 12px; }}
 </style>
 </head>
 <body>
 <h1>MOE Pareto Benchmark</h1>
-<p>Model: Qwen3.6-35B-A3B-NVFP4 &middot; Hardware: NVIDIA GB10 &middot; Run dir: {html.escape(os.path.basename(bench_dir))}</p>
+<p>Run dir: {html.escape(os.path.basename(bench_dir))} &middot; Hardware: NVIDIA GB10</p>
+
+<div class="definitions">
+<h3>Metric Definitions</h3>
+<dl>
+<dt>ISL (Input Sequence Length)</dt>
+<dd>Number of tokens in the input prompt. Varies across requests in multi-turn conversations.</dd>
+
+<dt>OSL (Output Sequence Length)</dt>
+<dd>Number of tokens generated by the model. Target was 128 tokens (+/- 32).</dd>
+
+<dt>TTFT (Time to First Token)</dt>
+<dd>Time from request start to first token received. Includes prefill phase and scheduling overhead.</dd>
+
+<dt>ITL (Inter-Token Latency)</dt>
+<dd>Average time between consecutive output tokens during decode phase. Lower is better.</dd>
+
+<dt>E2E Latency (End-to-End)</dt>
+<dd>Total request time from start to last token received. = TTFT + (OSL - 1) * ITL.</dd>
+
+<dt>Decode Phase Duration</dt>
+<dd>Time spent generating tokens after first token. = E2E Latency - TTFT.</dd>
+
+<dt>Decode Speed (tok/s)</dt>
+<dd>Actual token generation rate during decode phase. = OSL / Decode Phase Duration. This is the true decode performance.</dd>
+
+<dt>Req/s (Request Throughput)</dt>
+<dd>Total requests completed per second. Affected by concurrency level.</dd>
+
+<dt>tok/s/W (Tokens per Watt)</dt>
+<dd>Energy efficiency: output tokens generated per Joule of GPU energy consumed.</dd>
+</dl>
+
+<div class="example">
+<strong>Example (Muse-Glimmer-30B, text, c1):</strong><br>
+ISL=301 tokens, OSL=127 tokens, TTFT=992 ms, ITL=125 ms<br>
+E2E Latency = 992 + (127-1) * 125 = <b>16,742 ms</b><br>
+Decode Phase = 16,742 - 992 = <b>15,750 ms</b><br>
+Decode Speed = 127 / 15.75 = <b>8.1 tok/s</b>
+</div>
+
+<div class="note-box">
+<strong>Note: Decode Speed vs Throughput tokens/s</strong><br>
+<b>Decode Speed (tok/s)</b> = OSL / Decode Phase Duration. This measures how fast the model generates tokens <i>during active generation</i>. It reflects the model's raw decode performance.<br><br>
+<b>Throughput tokens/s</b> (in GPU Efficiency chart) = Total Output Tokens / Benchmark Duration. This includes idle time between requests and is affected by concurrency. At c1, it equals Decode Speed. At higher concurrency, it can exceed Decode Speed because multiple requests generate tokens in parallel.<br><br>
+<b>When to use which:</b> Use Decode Speed to compare model inference performance. Use Throughput to measure system-level capacity.
+</div>
+</div>
+
 {''.join(summary)}
 <h2>Legend</h2>
 <div>{legend}</div>
-<h2>Pareto Curves (Throughput vs Latency)</h2>
+<h2>Pareto Curve: Decode Speed vs Latency</h2>
+<p style="font-size: 13px; color: #666;">X-axis: End-to-end request latency. Y-axis: Token generation speed during decode. Higher Y is better (faster decode). Lower X is better (lower latency). Ideal: top-left corner.</p>
 <div class="grid">{''.join(f'<div class="plotbox">{p}</div>' for p in plots)}</div>
 <h2>GPU Efficiency</h2>
 <div class="plotbox">{gpu}</div>
 <h2>Metrics Table</h2>
 {table}
-<p class="note">Generated by make_pareto.py. Latency/TTFT/ITL are averages; throughput is request-level average.</p>
+<p class="note">Generated by make_pareto.py. Decode Speed = OSL / Decode Phase Duration. Latency includes prefill + decode + scheduling overhead.</p>
 </body>
 </html>"""
     with open(out_path, "w") as f:

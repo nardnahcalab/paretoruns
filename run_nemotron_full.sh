@@ -94,21 +94,23 @@ echo ""
 if [[ "${SKIP_ROUTING}" != "1" ]]; then
   echo ">>> Phase 1: Router profiling (single-turn)"
   echo "    Captures per-token expert routing for text/random/reasoning"
+  echo "    NOTE: Uses offline vllm.LLM API (loads model directly)"
   echo ""
 
-  for ds in text random reasoning; do
-    echo "    [${ds}] Running single-turn probe..."
-    python3 "${SCRIPT_DIR}/router_probe.py" \
-      --model "${MODEL_ID}" \
-      --url "${VLLM_URL}" \
-      --dataset "${ds}" \
-      --output "${ROUTING_DIR}/${ds}_single.json" \
-      2>&1 | tee "${ROUTING_DIR}/${ds}_single.log" || {
-        echo "    WARNING: ${ds} single-turn probe failed (check log)"
-        continue
-      }
-    echo "    [${ds}] Done"
-  done
+  # Set model for router probe
+  export PROBE_MODEL="${MODEL_ID}"
+
+  echo "    Running single-turn probe with all datasets..."
+  python3 "${SCRIPT_DIR}/router_probe.py" \
+    --text "${SCRIPT_DIR}/multi_turn_iso_text_chat.jsonl" \
+    --random "${SCRIPT_DIR}/multi_turn_iso_random_chat.jsonl" \
+    --reasoning "${SCRIPT_DIR}/multi_turn_iso_reasoning_chat.jsonl" \
+    --limit 20 \
+    --max-tokens 8 \
+    --out "${ROUTING_DIR}/probe" \
+    2>&1 | tee "${ROUTING_DIR}/single_turn.log" || {
+      echo "    WARNING: Single-turn probe failed (check log)"
+    }
   echo ""
 else
   echo ">>> Phase 1: Router profiling (SKIPPED)"
@@ -121,24 +123,24 @@ fi
 if [[ "${SKIP_ROUTING}" != "1" ]]; then
   echo ">>> Phase 2: Router profiling (multi-turn)"
   echo "    Captures routing evolution across conversation turns"
+  echo "    NOTE: Uses offline vllm.LLM API (loads model directly)"
   echo ""
 
-  for ds in text random reasoning; do
-    echo "    [${ds}] Running multi-turn probe..."
-    python3 "${SCRIPT_DIR}/router_probe_multiturn.py" \
-      --model "${MODEL_ID}" \
-      --url "${VLLM_URL}" \
-      --dataset "${ds}" \
-      --output "${ROUTING_DIR}/${ds}_multi.json" \
-      --sessions 20 \
-      --turns 5 \
-      --max-tokens 64 \
-      2>&1 | tee "${ROUTING_DIR}/${ds}_multi.log" || {
-        echo "    WARNING: ${ds} multi-turn probe failed (check log)"
-        continue
-      }
-    echo "    [${ds}] Done"
-  done
+  # Set model for router probe
+  export PROBE_MODEL="${MODEL_ID}"
+
+  echo "    Running multi-turn probe with all datasets..."
+  python3 "${SCRIPT_DIR}/router_probe_multiturn.py" \
+    --text "${SCRIPT_DIR}/multi_turn_iso_text_chat.jsonl" \
+    --random "${SCRIPT_DIR}/multi_turn_iso_random_chat.jsonl" \
+    --reasoning "${SCRIPT_DIR}/multi_turn_iso_reasoning_chat.jsonl" \
+    --limit 20 \
+    --max-tokens 64 \
+    --max-turns 5 \
+    --out "${ROUTING_DIR}/mt_probe" \
+    2>&1 | tee "${ROUTING_DIR}/multi_turn.log" || {
+      echo "    WARNING: Multi-turn probe failed (check log)"
+    }
   echo ""
 else
   echo ">>> Phase 2: Router profiling (SKIPPED)"

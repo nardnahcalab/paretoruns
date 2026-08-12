@@ -1,0 +1,26 @@
+{
+  "model": "meta-models/Muse-Glimmer-30B",
+  "short_name": "muse-glimmer",
+  "framework": "sglang",
+  "precision": "bf16",
+  "architecture": "Dense Transformer (Hybrid SWA)",
+  "total_params": "30B",
+  "active_params_per_token": "30B",
+  "max_context_length": 131072,
+  "container": "registry.dell.huggingface.co/enterprise-dell-inference-meta-models-muse-glimmer-30b-gb10:latest",
+  "hardware": "NVIDIA GB10 (DGX Spark, SM121)",
+  "timestamp": "20260811_192042",
+  "sweep_config": {
+    "output_tokens": [128],
+    "concurrency_levels": [1, 2, 4, 8],
+    "requests_per_level": 50,
+    "datasets": ["text", "random", "reasoning"]
+  },
+  "phases_completed": {
+    "router_profiling_single": false,
+    "router_profiling_multi": false,
+    "pareto_sweep_128": true,
+    "pareto_sweep_512": false
+  },
+  "notes": "Router profiling skipped - uses SGLang backend, not vLLM. 512-tok sweep skipped due to time constraints."
+}

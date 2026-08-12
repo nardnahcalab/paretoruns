@@ -1,0 +1,34 @@
+{
+  "model": "nvidia/Qwen3.6-35B-A3B-NVFP4",
+  "short_name": "qwen-nvfp4",
+  "framework": "vllm",
+  "precision": "nvfp4",
+  "architecture": "Qwen3.5-MoE (Gated DeltaNet + Mamba)",
+  "total_params": "35B",
+  "active_params_per_token": "3B",
+  "max_context_length": 32768,
+  "container": "vllm/vllm-openai:v0.24.0-ubuntu2404",
+  "hardware": "NVIDIA GB10 (DGX Spark, SM121)",
+  "timestamp": "20260811_215812",
+  "sweep_config": {
+    "output_tokens": [128, 512],
+    "concurrency_levels": [1, 2, 4, 8],
+    "requests_per_level": 50,
+    "datasets": ["text", "random", "reasoning"]
+  },
+  "phases_completed": {
+    "router_profiling_single": false,
+    "router_profiling_multi": false,
+    "pareto_sweep_128": true,
+    "pareto_sweep_512": false
+  },
+  "launch_config": {
+    "max_model_len": 32768,
+    "max_num_batched_tokens": 32768,
+    "gpu_memory_utilization": 0.90,
+    "kv_cache_dtype": "fp8_e4m3",
+    "enable_prefix_caching": true,
+    "enforce_eager": true
+  },
+  "notes": "Router profiling skipped. 512-tok sweep partially completed (4/12 runs). Qwen3.5-MoE has Mamba layers requiring block_size <= max_num_batched_tokens."
+}

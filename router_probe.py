@@ -113,8 +113,7 @@ def main():
         gpu_memory_utilization=args.gpu_mem,
         max_model_len=args.max_len,
         enforce_eager=True,
-        swap_space=0,
-        load_format="fastsafetensors",
+        load_format="auto",
         enable_return_routed_experts=True,
     )
 
