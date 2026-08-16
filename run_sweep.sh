@@ -27,6 +27,7 @@ OUTPUT_TOK_STDDEV="${OUTPUT_TOK_STDDEV:-128}"
 RANDOM_SEED="${RANDOM_SEED:-42}"
 GPU_TELEMETRY_MODE="${GPU_TELEMETRY_MODE:-pynvml}"
 RUN_TIMEOUT="${RUN_TIMEOUT:-1500}"
+GOODPUT_SLO="${GOODPUT_SLO:-}"  # e.g. "request_latency:2000" or "request_latency:2000 inter_token_latency:10"
 LABEL="sweep"
 SCRATCH_DIR="${SCRATCH_DIR:-}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -41,10 +42,11 @@ while [[ $# -gt 0 ]]; do
     --label)         LABEL="$2"; shift 2 ;;
     --timeout)       RUN_TIMEOUT="$2"; shift 2 ;;
     --warmup)        WARMUP_REQUESTS="$2"; shift 2 ;;
+    --goodput)       GOODPUT_SLO="$2"; shift 2 ;;
     --url)           VLLM_URL="$2"; shift 2 ;;
     --scratch)       SCRATCH_DIR="$2"; shift 2 ;;
     -h|--help)
-      echo "Usage: $0 [--concurrency '1 2 4'] [--output-tokens 512] [--output-std 128] [--requests N] [--label X] [--timeout S]"
+      echo "Usage: $0 [--concurrency '1 2 4'] [--output-tokens 512] [--output-std 128] [--requests N] [--label X] [--timeout S] [--goodput 'request_latency:2000']"
       exit 0 ;;
     *) echo "Unknown option: $1"; exit 1 ;;
   esac
@@ -63,6 +65,7 @@ echo "Label:        ${LABEL}"
 echo "Concurrency:  ${CONCURRENCY_LEVELS}"
 echo "Requests:     ${REQUEST_COUNT}"
 echo "Output tokens: ${OUTPUT_TOK_MEAN} +/- ${OUTPUT_TOK_STDDEV}"
+echo "Goodput SLO:  ${GOODPUT_SLO:-none}"
 echo "URL:          ${VLLM_URL}"
 echo ""
 
@@ -101,6 +104,13 @@ for ds in "${DATASET_NAMES[@]}"; do
         --ui none
         --gpu-telemetry "${GPU_TELEMETRY_MODE}"
     )
+
+    # Add goodput SLOs if specified
+    if [[ -n "${GOODPUT_SLO}" ]]; then
+      for slo in ${GOODPUT_SLO}; do
+        AIPERF_ARGS+=(--goodput "${slo}")
+      done
+    fi
 
     timeout "${RUN_TIMEOUT}" docker run --rm \
       --gpus all \
