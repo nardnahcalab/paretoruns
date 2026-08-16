@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nemotron 3.5 Lightning - Routing Probe Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-size: 2rem; color: #38bdf8; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.5rem; color: #7dd3fc; margin: 2rem 0 1rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        h3 { font-size: 1.1rem; color: #93c5fd; margin: 1.5rem 0 0.75rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+        .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; }
+        .card.highlight { border-color: #38bdf8; }
+        .metric { font-size: 2.5rem; font-weight: 700; color: #38bdf8; }
+        .metric-label { font-size: 0.875rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-sub { font-size: 0.9rem; color: #64748b; margin-top: 0.25rem; }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+        tr:hover { background: #1e293b; }
+        .tag { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .tag-mamba { background: #065f46; color: #6ee7b7; }
+        .tag-moe { background: #1e3a5f; color: #7dd3fc; }
+        .tag-text { background: #4c1d95; color: #c4b5fd; }
+        .tag-random { background: #78350f; color: #fcd34d; }
+        .tag-reasoning { background: #831843; color: #f9a8d4; }
+        .insight { background: #1e293b; border-left: 4px solid #38bdf8; padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+        .insight strong { color: #38bdf8; }
+        .insight ol { margin-top: 0.5rem; margin-left: 1.5rem; }
+        .insight ol li { margin-bottom: 0.35rem; }
+        .insight.danger { border-left-color: #ef4444; }
+        .insight.danger strong { color: #fca5a5; }
+        .insight.warning { border-left-color: #f59e0b; }
+        .insight.warning strong { color: #fcd34d; }
+        .insight.success { border-left-color: #10b981; }
+        .insight.success strong { color: #6ee7b7; }
+        .bar-chart { margin: 1rem 0; }
+        .bar-row { display: flex; align-items: center; margin: 0.5rem 0; }
+        .bar-label { width: 100px; font-size: 0.875rem; color: #94a3b8; }
+        .bar-container { flex: 1; height: 24px; background: #0f172a; border-radius: 4px; overflow: hidden; }
+        .bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 0.75rem; font-weight: 600; }
+        .bar-text { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+        .bar-random { background: linear-gradient(90deg, #d97706, #fbbf24); }
+        .bar-reasoning { background: linear-gradient(90deg, #db2777, #f472b6); }
+        .entropy-chart { display: flex; gap: 2px; align-items: flex-end; height: 200px; margin: 1rem 0; }
+        .entropy-bar { flex: 1; background: #334155; border-radius: 2px 2px 0 0; position: relative; }
+        .entropy-bar.moe { background: linear-gradient(180deg, #38bdf8, #0284c7); }
+        .entropy-bar.mamba { background: #1e293b; border: 1px solid #334155; }
+        .layer-legend { display: flex; gap: 1.5rem; margin: 0.5rem 0; font-size: 0.8rem; color: #94a3b8; }
+        .legend-item { display: flex; align-items: center; gap: 0.5rem; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+        .legend-moe { background: #38bdf8; }
+        .legend-mamba { background: #334155; border: 1px solid #475569; }
+        code { background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: #f472b6; }
+        .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #334155; color: #94a3b8; font-size: 0.875rem; line-height: 1.8; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+        .glossary dt { font-weight: 600; color: #93c5fd; margin-top: 1rem; }
+        .glossary dd { margin-left: 1.5rem; color: #cbd5e1; }
+        .metric-ref { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+        .metric-ref h4 { color: #38bdf8; margin-bottom: 0.5rem; font-size: 1rem; }
+        .metric-ref .formula { background: #0f172a; padding: 0.75rem 1rem; border-radius: 8px; font-family: 'Courier New', monospace; color: #7dd3fc; margin: 0.5rem 0; font-size: 0.95rem; }
+        .metric-ref .interpretation { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.75rem; }
+        .metric-ref .interp-item { background: #0f172a; padding: 0.5rem 0.75rem; border-radius: 6px; text-align: center; }
+        .metric-ref .interp-item .val { font-size: 1.1rem; font-weight: 700; }
+        .metric-ref .interp-item .lbl { font-size: 0.75rem; color: #94a3b8; }
+        .diagram-container { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 2rem; margin: 1.5rem 0; }
+        .flow-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.75rem 0; flex-wrap: wrap; }
+        .flow-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.85rem; text-align: center; min-width: 80px; }
+        .flow-box.active { border-color: #38bdf8; background: #1e3a5f; }
+        .flow-box.hot { border-color: #ef4444; background: #450a0a; }
+        .flow-box.cold { border-color: #64748b; background: #1e293b; color: #64748b; }
+        .flow-arrow { color: #64748b; font-size: 1.2rem; }
+        .flow-label { font-size: 0.75rem; color: #94a3b8; text-align: center; }
+        .heatmap { display: grid; gap: 2px; margin: 1rem 0; }
+        .heatmap-cell { width: 100%; aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 600; }
+        .heatmap-row { display: flex; gap: 2px; align-items: center; }
+        .heatmap-label { width: 80px; font-size: 0.75rem; color: #94a3b8; text-align: right; padding-right: 8px; }
+        .venn-container { display: flex; justify-content: center; align-items: center; gap: 2rem; margin: 1.5rem 0; flex-wrap: wrap; }
+        .venn-set { position: relative; width: 160px; height: 160px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 600; }
+        .ep-diagram { display: flex; gap: 1.5rem; justify-content: center; align-items: flex-start; margin: 1.5rem 0; flex-wrap: wrap; }
+        .ep-gpu { background: #1e293b; border: 2px solid #334155; border-radius: 12px; padding: 1rem; min-width: 140px; text-align: center; }
+        .ep-gpu.active { border-color: #38bdf8; }
+        .ep-gpu.idle { border-color: #475569; opacity: 0.6; }
+        .expert-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 0.5rem 0; }
+        .expert-dot { width: 100%; aspect-ratio: 1; border-radius: 3px; }
+        .expert-dot.hot { background: #ef4444; }
+        .expert-dot.warm { background: #f59e0b; }
+        .expert-dot.cold { background: #1e293b; border: 1px solid #334155; }
+        .legend-inline { display: flex; gap: 1.5rem; margin: 0.5rem 0; font-size: 0.8rem; color: #94a3b8; flex-wrap: wrap; }
+        .legend-inline span { display: flex; align-items: center; gap: 0.4rem; }
+        .legend-swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Nemotron 3.5 Lightning — Routing Probe Analysis</h1>
+    <p class="subtitle">Hybrid Mamba-MoE model with 256 experts, top-6 routing, NVFP4 quantization (4-bit)</p>
+
+    <h2>Test Environment</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Hardware</h3>
+            <p><strong>Dell Pro Max</strong> powered by <strong>NVIDIA GB10</strong> (DGX Spark, SM121)</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">128 GB unified memory &middot; 1 GPU &middot; Single-node, single-GPU inference</p>
+        </div>
+        <div class="card">
+            <h3>Software Stack</h3>
+            <p><strong>vLLM via Dell Enterprise AI Container</strong></p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">Docker &middot; FP8 KV cache &middot; Marlin MoE backend &middot; FlashInfer Mamba backend &middot; Prefix caching</p>
+        </div>
+        <div class="card">
+            <h3>Model</h3>
+            <p><code>nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4</code></p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">30B total &middot; 3B active per token &middot; 256 experts, top-6 routing &middot; Hybrid Mamba-MoE</p>
+        </div>
+        <div class="card">
+            <h3>Test Date</h3>
+            <p><strong>August 11, 2026</strong></p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">Single-turn &amp; multi-turn probes &middot; Run timestamp: 20260811_170807</p>
+        </div>
+    </div>
+
+    <h2>Experiment Methodology</h2>
+    <div class="insight">
+        <strong>Goal:</strong> Capture the real per-token expert routing decisions made by the model's router during inference, using vLLM's <code>enable_return_routed_experts</code> flag. This returns the exact top-6 expert IDs selected by the fused MoE kernels — not an approximation, but the actual routing computation.
+    </div>
+
+    <h3>Probe Design</h3>
+    <div class="two-col">
+        <div class="card">
+            <h3>Single-Turn Probe (<code>router_probe.py</code>)</h3>
+            <table>
+                <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+                <tbody>
+                    <tr><td>Sessions per dataset</td><td>20</td></tr>
+                    <tr><td>Max tokens per prompt</td><td>8 (decode)</td></tr>
+                    <tr><td>Max sequence length</td><td>512</td></tr>
+                    <tr><td>GPU memory utilization</td><td>50%</td></tr>
+                    <tr><td>Output</td><td>Per-layer entropy, expert load histograms, top-expert share</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Multi-Turn Probe (<code>router_probe_multiturn.py</code>)</h3>
+            <table>
+                <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+                <tbody>
+                    <tr><td>Sessions per dataset</td><td>20</td></tr>
+                    <tr><td>Max output tokens</td><td>64</td></tr>
+                    <tr><td>Max sequence length</td><td>4,096</td></tr>
+                    <tr><td>GPU memory utilization</td><td>80%</td></tr>
+                    <tr><td>Output</td><td>Overall entropy, position-based entropy (early/mid/late), Jaccard overlap</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h3>Datasets</h3>
+    <table>
+        <thead><tr><th>Dataset</th><th>Description</th><th>Purpose</th></tr></thead>
+        <tbody>
+            <tr><td><span class="tag tag-text">TEXT</span></td><td>Natural language text (chat-formatted prompts)</td><td>Baseline routing for real-world conversational inputs</td></tr>
+            <tr><td><span class="tag tag-random">RANDOM</span></td><td>Random token sequences</td><td>Control: tests routing with no semantic structure</td></tr>
+            <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>Chain-of-thought / reasoning prompts</td><td>Tests whether complex reasoning changes routing patterns</td></tr>
+        </tbody>
+    </table>
+
+    <h3>Entropy Formula</h3>
+    <div class="insight">
+        <strong>H = &minus;&Sigma;(p<sub>i</sub> &times; log<sub>2</sub>(p<sub>i</sub>)) / log<sub>2</sub>(K)</strong>
+        <br><br>
+        Where p<sub>i</sub> is the fraction of tokens routed to expert <em>i</em>, and K = 256 (total experts). Normalized so that 1.0 = perfectly uniform routing across all experts, and 0.0 = all tokens routed to a single expert. With top-6 routing (2.3% of experts active per token), a perfectly balanced router would give entropy close to 1.0.
+    </div>
+
+    <h3>Position Analysis (Multi-Turn)</h3>
+    <div class="insight">
+        <strong>Tokens are binned by position within each output sequence:</strong>
+        <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+            <li><strong>Early:</strong> First 20% of output tokens — captures initial routing behavior</li>
+            <li><strong>Mid:</strong> Middle 60% of output tokens — steady-state routing</li>
+            <li><strong>Late:</strong> Last 20% of output tokens — routing at sequence completion</li>
+        </ul>
+        This reveals whether the router changes behavior as sequences progress, which has implications for KV cache management and load balancing in long-running inference.
+    </div>
+
+    <div class="grid">
+        <div class="card highlight">
+            <div class="metric">30B</div>
+            <div class="metric-label">Total Parameters</div>
+            <div class="metric-sub">3B active per token (MoE + Mamba)</div>
+        </div>
+        <div class="card">
+            <div class="metric">256</div>
+            <div class="metric-label">Experts</div>
+            <div class="metric-sub">Top-6 routing per token</div>
+        </div>
+        <div class="card">
+            <div class="metric">NVFP4</div>
+            <div class="metric-label">Precision</div>
+            <div class="metric-sub">4-bit NVIDIA floating point</div>
+        </div>
+        <div class="card">
+            <div class="metric">~2.3%</div>
+            <div class="metric-label">Expert Utilization</div>
+            <div class="metric-sub">6/256 experts per token</div>
+        </div>
+    </div>
+
+    <h2>Metrics Reference</h2>
+    <p style="color: #94a3b8; margin-bottom: 1rem;">The following metrics are used throughout this report to quantify routing behavior.</p>
+
+    <div class="metric-ref">
+        <h4>Gini Coefficient — Load Inequality</h4>
+        <p style="color: #cbd5e1; font-size: 0.9rem;">Measures how unequally tokens are distributed across experts.</p>
+        <div class="formula">G = (2 &times; &Sigma;(i &times; y<sub>i</sub>)) / (n &times; &Sigma;y<sub>i</sub>) &minus; (n+1)/n &nbsp;&nbsp; where y<sub>i</sub> = sorted expert loads</div>
+        <div class="interpretation">
+            <div class="interp-item"><div class="val" style="color: #10b981;">0.0</div><div class="lbl">Perfect equality</div></div>
+            <div class="interp-item"><div class="val" style="color: #f59e0b;">0.65-0.82</div><div class="lbl">Nemotron range</div></div>
+            <div class="interp-item"><div class="val" style="color: #ef4444;">1.0</div><div class="lbl">Perfect inequality</div></div>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.75rem;"><strong style="color: #7dd3fc;">Why it matters:</strong> A Gini of 0.80 means the top 20% of experts handle ~60% of tokens. In Expert Parallelism, this translates to GPU idle time.</p>
+    </div>
+
+    <div class="metric-ref">
+        <h4>Jaccard Index — Expert Set Overlap</h4>
+        <p style="color: #cbd5e1; font-size: 0.9rem;">Measures how similar two sets of top-6 experts are across datasets.</p>
+        <div class="formula">J(A, B) = |A &cap; B| / |A &cup; B| &nbsp;&nbsp; where A, B = sets of top-6 experts for two datasets</div>
+        <div class="interpretation">
+            <div class="interp-item"><div class="val" style="color: #ef4444;">0.0</div><div class="lbl">No overlap</div></div>
+            <div class="interp-item"><div class="val" style="color: #f59e0b;">0.09-0.35</div><div class="lbl">Nemotron range</div></div>
+            <div class="interp-item"><div class="val" style="color: #10b981;">1.0</div><div class="lbl">Identical sets</div></div>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.75rem;"><strong style="color: #7dd3fc;">Why it matters:</strong> Low Jaccard between text and random (0.09) proves the router selects fundamentally different experts for different input types.</p>
+    </div>
+
+    <div class="metric-ref">
+        <h4>Cosine Similarity — Distribution Shape Comparison</h4>
+        <p style="color: #cbd5e1; font-size: 0.9rem;">Measures how similarly all 256 experts are loaded across two datasets.</p>
+        <div class="formula">cos(A, B) = (A &middot; B) / (&Vert;A&Vert; &times; &Vert;B&Vert;) &nbsp;&nbsp; where A, B = 256-dimensional load vectors</div>
+        <div class="interpretation">
+            <div class="interp-item"><div class="val" style="color: #ef4444;">0.0</div><div class="lbl">Orthogonal</div></div>
+            <div class="interp-item"><div class="val" style="color: #f59e0b;">0.61</div><div class="lbl">Text ↔ Random</div></div>
+            <div class="interp-item"><div class="val" style="color: #10b981;">1.0</div><div class="lbl">Identical</div></div>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.75rem;"><strong style="color: #7dd3fc;">Why it matters:</strong> Text↔reasoning cosine = 0.84 (similar), but text↔random = 0.61 (different). This quantifies content-aware routing.</p>
+    </div>
+
+    <div class="metric-ref">
+        <h4>Normalized Entropy — Routing Diversity</h4>
+        <p style="color: #cbd5e1; font-size: 0.9rem;">Measures how evenly tokens are spread across experts.</p>
+        <div class="formula">H = &minus;&Sigma;(p<sub>i</sub> &times; log<sub>2</sub>(p<sub>i</sub>)) / log<sub>2</sub>(K) &nbsp;&nbsp; where p<sub>i</sub> = fraction of tokens to expert i, K = 256</div>
+        <div class="interpretation">
+            <div class="interp-item"><div class="val" style="color: #ef4444;">0.0</div><div class="lbl">Focused</div></div>
+            <div class="interp-item"><div class="val" style="color: #f59e0b;">0.75-0.84</div><div class="lbl">Nemotron MoE range</div></div>
+            <div class="interp-item"><div class="val" style="color: #10b981;">1.0</div><div class="lbl">Uniform</div></div>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.75rem;"><strong style="color: #7dd3fc;">Why it matters:</strong> MoE-only entropy is 0.75-0.84, but overall entropy including Mamba layers drops to 0.35-0.36. This hybrid effect is unique to Nemotron.</p>
+    </div>
+
+    <h3>Metrics Relationship Diagram</h3>
+    <div class="diagram-container">
+        <p style="color: #94a3b8; margin-bottom: 1rem; text-align: center;">How routing metrics relate to each other:</p>
+        <div class="flow-row" style="justify-content: center;">
+            <div class="flow-box active">Normalized Entropy<br><span style="font-size: 0.7rem; color: #94a3b8;">Distribution shape</span></div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box active">Gini Coefficient<br><span style="font-size: 0.7rem; color: #94a3b8;">Load inequality</span></div>
+        </div>
+        <div class="flow-row" style="justify-content: center;">
+            <div class="flow-box active">Jaccard Index<br><span style="font-size: 0.7rem; color: #94a3b8;">Top-6 set overlap</span></div>
+            <div class="flow-arrow">&larr;</div>
+            <div class="flow-box active">Cosine Similarity<br><span style="font-size: 0.7rem; color: #94a3b8;">Full 256-d load</span></div>
+        </div>
+        <p style="color: #64748b; font-size: 0.8rem; margin-top: 1rem; text-align: center;">Entropy &amp; Gini measure <em>how</em> tokens are distributed. Jaccard &amp; Cosine measure <em>which</em> experts are used.</p>
+    </div>
+
+    <h2>1. Architecture: Hybrid Mamba-MoE</h2>
+    <div class="insight">
+        <strong>Key Finding:</strong> Nemotron 3.5 Lightning is NOT a pure MoE model. It alternates between Mamba/SSM layers (where all tokens route to expert 0 — effectively a single-path layer) and true MoE layers (where 256 experts compete with top-6 routing). This hybrid design explains the "Lightning" branding — Mamba layers provide constant-time sequence processing while MoE layers provide capacity.
+    </div>
+
+    <h3>Layer Pattern</h3>
+    <div class="bar-chart">
+        <div class="bar-row">
+            <div class="bar-label">Mamba (29)</div>
+            <div class="bar-container">
+                <div class="bar bar-text" style="width: 55.8%">Layers 0,2,4,5,7,9,11,12,14,16,18,19,21,23,25,26,28,30,32,33,35,37,39,41,42,44,46,48,50</div>
+            </div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label">MoE (23)</div>
+            <div class="bar-container">
+                <div class="bar bar-reasoning" style="width: 44.2%">Layers 1,3,6,8,10,13,15,17,20,22,24,27,29,31,34,36,38,40,43,45,47,49,51</div>
+            </div>
+        </div>
+    </div>
+    <div class="layer-legend">
+        <div class="legend-item"><div class="legend-dot legend-mamba"></div> Mamba/SSM (entropy ≈ 0, single expert)</div>
+        <div class="legend-item"><div class="legend-dot legend-moe"></div> MoE (distributed routing, 256 experts, top-6)</div>
+    </div>
+
+    <h3>MoE Routing Flow Diagram</h3>
+    <div class="diagram-container">
+        <div class="flow-row">
+            <div class="flow-box">Input Token<br><span style="font-size: 0.7rem; color: #94a3b8;">hidden dim</span></div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box active">Router (Linear + Softmax)<br><span style="font-size: 0.7rem; color: #94a3b8;">256 logits</span></div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box active">Top-6 Selection<br><span style="font-size: 0.7rem; color: #94a3b8;">2.3% active</span></div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box hot">Expert 0<br><span style="font-size: 0.7rem; color: #fca5a5;">active</span></div>
+            <div class="flow-box hot">Expert 5<br><span style="font-size: 0.7rem; color: #fca5a5;">active</span></div>
+            <div class="flow-box hot">Expert 12<br><span style="font-size: 0.7rem; color: #fca5a5;">active</span></div>
+            <div class="flow-box hot">Expert 89<br><span style="font-size: 0.7rem; color: #fca5a5;">active</span></div>
+            <div class="flow-box hot">Expert 178<br><span style="font-size: 0.7rem; color: #fca5a5;">active</span></div>
+            <div class="flow-box hot">Expert 243<br><span style="font-size: 0.7rem; color: #fca5a5;">active</span></div>
+        </div>
+        <div class="flow-row" style="justify-content: flex-end; margin-top: 0.25rem;">
+            <span style="font-size: 0.7rem; color: #64748b; margin-right: 0.5rem;">250 experts idle (97.7%)</span>
+        </div>
+    </div>
+
+    <h2>2. Single-Turn Routing Behavior</h2>
+    <div class="insight">
+        <strong>Entropy measures routing diversity on MoE layers only.</strong> Higher entropy = tokens spread across more experts (diverse). Lower entropy = tokens concentrated on fewer experts (focused). Note: entropy is computed on the 23 MoE layers, not all 52 layers.
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3><span class="tag tag-text">TEXT</span></h3>
+            <div class="metric">0.771</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">517 tokens &middot; Top share: 7.1%</div>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-random">RANDOM</span></h3>
+            <div class="metric">0.755</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">444 tokens &middot; Top share: 7.5%</div>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-reasoning">REASONING</span></h3>
+            <div class="metric">0.748</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">409 tokens &middot; Top share: 8.6%</div>
+        </div>
+    </div>
+
+    <h3>Entropy by Layer (Single-Turn Text)</h3>
+    <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 0.5rem;">Each bar = one layer. Blue = MoE layer (entropy shown as height). Gray = Mamba layer (entropy ≈ 0).</p>
+    <div class="entropy-chart">
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 0: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 83.6%" title="Layer 1: 0.836"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 2: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 82.2%" title="Layer 3: 0.822"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 4: Mamba"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 5: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 76%" title="Layer 6: 0.760"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 7: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 77%" title="Layer 8: 0.770"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 9: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 78.2%" title="Layer 10: 0.782"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 11: Mamba"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 12: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 78.4%" title="Layer 13: 0.784"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 14: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 72%" title="Layer 15: 0.720"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 16: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 77.9%" title="Layer 17: 0.779"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 18: Mamba"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 19: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 77.5%" title="Layer 20: 0.775"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 21: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 80.6%" title="Layer 22: 0.806"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 23: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 76.4%" title="Layer 24: 0.764"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 25: Mamba"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 26: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 73.5%" title="Layer 27: 0.735"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 28: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 81.8%" title="Layer 29: 0.818"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 30: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 80.1%" title="Layer 31: 0.801"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 32: Mamba"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 33: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 81.4%" title="Layer 34: 0.814"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 35: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 81.1%" title="Layer 36: 0.811"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 37: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 81.5%" title="Layer 38: 0.815"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 39: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 81.9%" title="Layer 40: 0.819"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 41: Mamba"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 42: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 82.8%" title="Layer 43: 0.828"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 44: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 83.2%" title="Layer 45: 0.832"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 46: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 83.4%" title="Layer 47: 0.834"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 48: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 82.9%" title="Layer 49: 0.829"></div>
+        <div class="entropy-bar mamba" style="height: 2%" title="Layer 50: Mamba"></div>
+        <div class="entropy-bar moe" style="height: 83.9%" title="Layer 51: 0.839"></div>
+    </div>
+
+    <h3>Cross-Dataset Entropy Comparison</h3>
+    <table>
+        <thead>
+            <tr><th>Dataset</th><th>Mean Entropy</th><th>Top Expert Share</th><th>Tokens</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><span class="tag tag-text">TEXT</span></td><td>0.771</td><td>7.1%</td><td>517</td></tr>
+            <tr><td><span class="tag tag-random">RANDOM</span></td><td>0.755</td><td>7.5%</td><td>444</td></tr>
+            <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>0.748</td><td>8.6%</td><td>409</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight">
+        <strong>Interpretation:</strong> Text prompts produce the most diverse routing (highest entropy), meaning tokens are spread more evenly across experts. Reasoning prompts produce the most focused routing (lowest entropy, highest top-expert share at 8.6%). All three datasets show similar entropy ranges (0.75-0.77), indicating the router is largely <strong>content-agnostic</strong> in terms of distribution shape — though it does select different expert sets (Section 9).
+    </div>
+
+    <h2>3. Multi-Turn Routing Behavior</h2>
+    <div class="insight">
+        <strong>Position analysis:</strong> Tokens are classified as early (first 20% of sequence), mid (middle 60%), or late (last 20%). Note: overall entropy includes all 52 layers (Mamba + MoE), so it is lower than MoE-only entropy.
+    </div>
+
+    <div class="two-col">
+        <div class="card">
+            <h3>Overall Mean Entropy (All Layers)</h3>
+            <table>
+                <thead><tr><th>Dataset</th><th>Entropy</th><th>Prompts</th><th>Tokens</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="tag tag-text">TEXT</span></td><td>0.358</td><td>55</td><td>3,465</td></tr>
+                    <tr><td><span class="tag tag-random">RANDOM</span></td><td>0.354</td><td>58</td><td>3,355</td></tr>
+                    <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>0.350</td><td>74</td><td>4,662</td></tr>
+                </tbody>
+            </table>
+            <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">Note: Overall entropy is lower than MoE-only entropy because it includes 29 Mamba layers (entropy ≈ 0) in the average.</p>
+        </div>
+        <div class="card">
+            <h3>Position-Based Entropy</h3>
+            <table>
+                <thead><tr><th>Position</th><th>Text</th><th>Random</th><th>Reasoning</th></tr></thead>
+                <tbody>
+                    <tr><td>Early (first 20%)</td><td>0.348</td><td>0.339</td><td>0.339</td></tr>
+                    <tr><td>Mid (middle 60%)</td><td>0.359</td><td>0.354</td><td>0.351</td></tr>
+                    <tr><td>Late (last 20%)</td><td>0.361</td><td>0.356</td><td>0.354</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="insight">
+        <strong>Position trend:</strong> Entropy increases slightly from early to mid to late positions across all datasets (e.g., text: 0.348 to 0.359 to 0.361). The router becomes <strong>slightly more diverse</strong> as sequences progress. The effect is small (~3-5% relative increase) but consistent.
+    </div>
+
+    <h2>4. Single-Turn vs Multi-Turn Comparison</h2>
+    <div class="two-col">
+        <div class="card">
+            <h3>Entropy Comparison</h3>
+            <table>
+                <thead><tr><th>Dataset</th><th>Single-Turn</th><th>Multi-Turn</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="tag tag-text">TEXT</span></td><td>0.771 <span style="color: #94a3b8;">(MoE only)</span></td><td>0.358 <span style="color: #94a3b8;">(all layers)</span></td></tr>
+                    <tr><td><span class="tag tag-random">RANDOM</span></td><td>0.755 <span style="color: #94a3b8;">(MoE only)</span></td><td>0.354 <span style="color: #94a3b8;">(all layers)</span></td></tr>
+                    <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>0.748 <span style="color: #94a3b8;">(MoE only)</span></td><td>0.350 <span style="color: #94a3b8;">(all layers)</span></td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Key Differences</h3>
+            <table>
+                <thead><tr><th>Metric</th><th>Single-Turn</th><th>Multi-Turn</th></tr></thead>
+                <tbody>
+                    <tr><td>Tokens</td><td>409-517</td><td>3,355-4,662</td></tr>
+                    <tr><td>Sessions</td><td>20</td><td>20</td></tr>
+                    <tr><td>Prompts</td><td>1 (system + user)</td><td>3-6 turns</td></tr>
+                    <tr><td>Entropy calculation</td><td>MoE layers only</td><td>All 52 layers</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="insight warning">
+        <strong>Entropy drop explained:</strong> The apparent drop from 0.77 to 0.36 is NOT a real routing change. Single-turn probes measure entropy only on the 23 MoE layers. Multi-turn probes average over all 52 layers, including 29 Mamba layers with entropy ≈ 0. When you exclude Mamba layers, MoE-only entropy is comparable (~0.75-0.77).
+    </div>
+
+    <h2>5. Content-Aware Expert Selection</h2>
+    <div class="insight">
+        <strong>Entropy measures distribution shape, not which experts are selected.</strong> Two datasets can have similar entropy but completely different expert selections. This section proves that Nemotron's router IS content-aware.
+    </div>
+
+    <h3>Cosine Similarity (Full 256-D Load Vectors)</h3>
+    <table>
+        <thead><tr><th>Layer</th><th>Text &#8594; Random</th><th>Text &#8594; Reasoning</th><th>Random &#8594; Reasoning</th></tr></thead>
+        <tbody>
+            <tr><td>Layer 1</td><td>0.772</td><td>0.912</td><td>0.794</td></tr>
+            <tr><td>Layer 3</td><td>0.648</td><td>0.866</td><td>0.698</td></tr>
+            <tr><td>Layer 6</td><td>0.631</td><td>0.910</td><td>0.648</td></tr>
+            <tr><td>Layer 8</td><td>0.507</td><td>0.744</td><td>0.383</td></tr>
+            <tr><td>Layer 15</td><td>0.608</td><td>0.708</td><td>0.491</td></tr>
+            <tr><td>Layer 27</td><td>0.484</td><td>0.779</td><td>0.379</td></tr>
+            <tr><td>Layer 43</td><td>0.726</td><td>0.844</td><td>0.630</td></tr>
+            <tr><td>Layer 51</td><td>0.531</td><td>0.843</td><td>0.578</td></tr>
+            <tr style="font-weight: 700;"><td>Mean</td><td>0.614</td><td>0.838</td><td>0.575</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight">
+        <strong>Key finding:</strong> Text&#8594;Reasoning cosine = 0.838 (similar load patterns), but Text&#8594;Random cosine = 0.614 (different patterns). Random inputs produce a fundamentally different load distribution. The router IS content-aware.
+    </div>
+
+    <h3>Top-6 Jaccard Index (Expert Set Overlap)</h3>
+    <table>
+        <thead><tr><th>Layer</th><th>Text &#8594; Random</th><th>Text &#8594; Reasoning</th><th>Random &#8594; Reasoning</th></tr></thead>
+        <tbody>
+            <tr><td>Layer 1</td><td>0.000</td><td>0.333</td><td>0.091</td></tr>
+            <tr><td>Layer 6</td><td>0.200</td><td>0.500</td><td>0.200</td></tr>
+            <tr><td>Layer 8</td><td>0.091</td><td>0.333</td><td>0.000</td></tr>
+            <tr><td>Layer 27</td><td>0.091</td><td>0.500</td><td>0.091</td></tr>
+            <tr><td>Layer 51</td><td>0.091</td><td>0.333</td><td>0.200</td></tr>
+            <tr style="font-weight: 700;"><td>Mean</td><td>0.095</td><td>0.400</td><td>0.116</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight">
+        <strong>Key finding:</strong> Text&#8594;Random Jaccard = 0.095 (nearly disjoint expert sets). Text&#8594;Reasoning Jaccard = 0.400 (moderate overlap). Text and random inputs activate fundamentally different expert subsets.
+    </div>
+
+    <h3>Content-Aware Routing Summary</h3>
+    <div class="diagram-container">
+        <p style="text-align: center; color: #94a3b8; margin-bottom: 1rem;">Mean metrics across MoE layers:</p>
+        <div class="flow-row" style="justify-content: center;">
+            <div class="flow-box" style="border-color: #c4b5fd; background: #2e1065;">
+                Text &#8594; Reasoning<br>
+                <span style="font-size: 0.7rem; color: #c4b5fd;">Cosine: 0.838</span><br>
+                <span style="font-size: 0.7rem; color: #c4b5fd;">Jaccard: 0.400</span><br>
+                <span style="font-size: 0.7rem; color: #94a3b8;">Similar experts</span>
+            </div>
+            <div class="flow-arrow" style="font-size: 2rem;">&nbsp;&nbsp;&nbsp;&nbsp;</div>
+            <div class="flow-box" style="border-color: #fcd34d; background: #451a03;">
+                Text &#8594; Random<br>
+                <span style="font-size: 0.7rem; color: #fcd34d;">Cosine: 0.614</span><br>
+                <span style="font-size: 0.7rem; color: #fcd34d;">Jaccard: 0.095</span><br>
+                <span style="font-size: 0.7rem; color: #94a3b8;">Different experts</span>
+            </div>
+        </div>
+    </div>
+
+    <h2>6. Why Entropy Is Similar Across Datasets</h2>
+    <div class="insight">
+        <strong>Paradox:</strong> The router selects different experts (low Jaccard) but produces similar entropy (similar distribution shape). Entropy measures <em>how evenly</em> tokens are spread, not <em>which</em> experts receive tokens.
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3>1. Training Regularization</h3>
+            <p>The router is trained with load-balancing loss terms that enforce uniform token distribution across experts. This constrains entropy to a narrow band (~0.72-0.84) regardless of input content.</p>
+        </div>
+        <div class="card">
+            <h3>2. Top-6 Constraint</h3>
+            <p>With only 6 of 256 experts active per token (2.3%), the router has limited freedom to vary distribution shape. The constraint forces similar entropy regardless of which experts are chosen.</p>
+        </div>
+        <div class="card">
+            <h3>3. Short Sequences</h3>
+            <p>Probe sequences are short (8 decode tokens). The router may exhibit more content-dependent behavior on longer sequences where semantic context is richer.</p>
+        </div>
+    </div>
+
+    <h2>7. Expert Parallelism</h2>
+    <div class="insight">
+        <strong>Expert Parallelism (EP)</strong> distributes MoE experts across GPUs. Each GPU holds a subset of the 256 experts. When a token needs an expert on another GPU, an all-to-all communication operation routes it.
+    </div>
+
+    <h3>EP Communication Pattern (EP=4)</h3>
+    <div class="diagram-container">
+        <div class="ep-diagram">
+            <div class="ep-gpu active">
+                <strong>GPU 0</strong><br>
+                <span style="font-size: 0.8rem; color: #94a3b8;">Experts 0-63</span><br>
+                <span style="font-size: 0.7rem; color: #38bdf8;">Hot: 0, 5, 12</span><br>
+                <span style="font-size: 0.7rem; color: #fcd34d;">Warm: 22, 45</span><br>
+                <span style="font-size: 0.7rem; color: #64748b;">Cold: 3, 7, 11, ...</span>
+            </div>
+            <div class="ep-gpu active">
+                <strong>GPU 1</strong><br>
+                <span style="font-size: 0.8rem; color: #94a3b8;">Experts 64-127</span><br>
+                <span style="font-size: 0.7rem; color: #38bdf8;">Hot: 89, 108</span><br>
+                <span style="font-size: 0.7rem; color: #fcd34d;">Warm: 70, 115</span><br>
+                <span style="font-size: 0.7rem; color: #64748b;">Cold: 65, 67, 71, ...</span>
+            </div>
+            <div class="ep-gpu active">
+                <strong>GPU 2</strong><br>
+                <span style="font-size: 0.8rem; color: #94a3b8;">Experts 128-191</span><br>
+                <span style="font-size: 0.7rem; color: #38bdf8;">Hot: 159, 178</span><br>
+                <span style="font-size: 0.7rem; color: #fcd34d;">Warm: 132, 185</span><br>
+                <span style="font-size: 0.7rem; color: #64748b;">Cold: 129, 131, 135, ...</span>
+            </div>
+            <div class="ep-gpu active">
+                <strong>GPU 3</strong><br>
+                <span style="font-size: 0.8rem; color: #94a3b8;">Experts 192-255</span><br>
+                <span style="font-size: 0.7rem; color: #38bdf8;">Hot: 243</span><br>
+                <span style="font-size: 0.7rem; color: #fcd34d;">Warm: 210, 238</span><br>
+                <span style="font-size: 0.7rem; color: #64748b;">Cold: 193, 195, 199, ...</span>
+            </div>
+        </div>
+        <div class="flow-row" style="justify-content: center; margin-top: 1rem;">
+            <div class="flow-box">Token<br>Input</div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box active">All-to-All<br>Dispatch</div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box hot">GPU 0<br>6 experts</div>
+            <div class="flow-box hot">GPU 1<br>6 experts</div>
+            <div class="flow-box hot">GPU 2<br>6 experts</div>
+            <div class="flow-box hot">GPU 3<br>6 experts</div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box active">All-to-All<br>Combine</div>
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b; text-align: center; margin-top: 0.5rem;">Each token activates 6 experts spread across 4 GPUs. All-to-all communication is required for every MoE layer forward pass.</p>
+    </div>
+
+    <h3>Capacity Planning for EP</h3>
+    <table>
+        <thead><tr><th>EP Size</th><th>Experts/GPU</th><th>Active/GPU (est.)</th><th>Communication</th><th>Use Case</th></tr></thead>
+        <tbody>
+            <tr><td>EP=1</td><td>256</td><td>6</td><td>None</td><td>Single GPU (current)</td></tr>
+            <tr><td>EP=4</td><td>64</td><td>~1.5</td><td>4-way all-to-all</td><td>4-GPU DGX Station</td></tr>
+            <tr><td>EP=8</td><td>32</td><td>~0.75</td><td>8-way all-to-all</td><td>8-GPU server</td></tr>
+            <tr><td>EP=32</td><td>8</td><td>~0.19</td><td>32-way all-to-all</td><td>Multi-node cluster</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight warning">
+        <strong>Load imbalance risk:</strong> With top-6 routing and Gini ~0.75-0.82, some experts receive 3-4x the load of others. In EP, the hottest expert on each GPU determines the minimum time for that GPU to complete. Load imbalance translates directly to GPU idle time and reduced throughput.
+    </div>
+
+    <h2>8. Research Findings</h2>
+
+    <div class="grid">
+        <div class="card">
+            <h3>Architecture Uniqueness</h3>
+            <p>Nemotron's 29/23 Mamba-MoE split is unique among production LLMs. The SSM layers handle sequence modeling at constant cost, while MoE layers provide capacity. This makes it faster than pure MoE models for long sequences.</p>
+        </div>
+        <div class="card">
+            <h3>Entropy Is Not Content-Awareness</h3>
+            <p>Similar entropy (0.75-0.77) across datasets does NOT mean the router is content-agnostic. Low Jaccard (0.095 text&#8594;random) proves the router selects different experts. Entropy measures shape, not identity.</p>
+        </div>
+        <div class="card">
+            <h3>Top-6 vs Top-8</h3>
+            <p>With 6 experts active per token (2.3%), Nemotron has slightly lower expert utilization than Qwen's top-8 (3.1%). This means each expert handles a larger share of tokens, potentially increasing load imbalance.</p>
+        </div>
+        <div class="card">
+            <h3>Production Implications</h3>
+            <p>The content-aware routing (text vs random = 0.61 cosine) means workload composition affects load distribution. Systems serving predominantly text traffic will see different hotspots than those serving random/noisy inputs.</p>
+        </div>
+    </div>
+
+    <h2>9. Implications for Production</h2>
+
+    <div class="insight success">
+        <strong>Good news for deployment:</strong>
+        <ol>
+            <li><strong>Predictable load:</strong> Entropy is stable across input types (0.75-0.77). Load balancing strategies work regardless of traffic composition.</li>
+            <li><strong>Mamba speedup:</strong> 56% of layers are constant-time SSM operations. Long-sequence throughput is better than pure MoE models.</li>
+            <li><strong>Moderate imbalance:</strong> Gini 0.75-0.82 is manageable with standard load-balancing techniques.</li>
+        </ol>
+    </div>
+
+    <div class="insight danger">
+        <strong>Watch out for:</strong>
+        <ol>
+            <li><strong>EP load imbalance:</strong> With top-6 and Gini ~0.82, the hottest expert may get 3-4x average load. All-to-all communication becomes the bottleneck.</li>
+            <li><strong>Prefill routing:</strong> The single-turn probe includes prefill tokens (~65-70% of measured tokens). Real decode-only routing may differ.</li>
+            <li><strong>Content-dependent hotspots:</strong> Text and random produce different cosine patterns (0.61). Traffic mix affects which GPUs are busiest.</li>
+        </ol>
+    </div>
+
+    <h2>10. Cross-Model Comparison: Nemotron vs Qwen</h2>
+
+    <table>
+        <thead><tr><th>Metric</th><th>Nemotron 3.5 Lightning</th><th>Qwen3.6-35B-A3B</th></tr></thead>
+        <tbody>
+            <tr><td>Architecture</td><td>Hybrid Mamba-MoE (29 Mamba + 23 MoE)</td><td>Pure MoE (40 layers)</td></tr>
+            <tr><td>Total params</td><td>30B</td><td>35B</td></tr>
+            <tr><td>Active params</td><td>3B</td><td>3B</td></tr>
+            <tr><td>Experts</td><td>256, top-6 (2.3%)</td><td>256, top-8 (3.1%)</td></tr>
+            <tr><td>MoE layers</td><td>23</td><td>40</td></tr>
+            <tr><td>Single-turn entropy</td><td>0.75-0.77</td><td>0.85-0.90</td></tr>
+            <tr><td>Multi-turn entropy</td><td>0.35-0.36 (all layers)</td><td>0.85-0.90</td></tr>
+            <tr><td>Text&#8594;Random cosine</td><td>0.614</td><td>0.493</td></tr>
+            <tr><td>Text&#8594;Reasoning cosine</td><td>0.838</td><td>0.763</td></tr>
+            <tr><td>Text&#8594;Random Jaccard</td><td>0.095</td><td>0.114</td></tr>
+            <tr><td>Position effect</td><td>3-5% increase (early to late)</td><td>6-12% increase (early to late)</td></tr>
+            <tr><td>Quantization</td><td>NVFP4</td><td>NVFP4</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight">
+        <strong>Key differences:</strong>
+        <ol>
+            <li><strong>Nemotron has lower entropy</strong> (0.77 vs 0.88) because top-6 activates fewer experts, concentrating tokens more.</li>
+            <li><strong>Nemotron has higher text&#8594;reasoning cosine</strong> (0.84 vs 0.76), meaning its router treats text and reasoning more similarly than Qwen's.</li>
+            <li><strong>Both models are content-aware</strong> (low text&#8594;random Jaccard), but Qwen shows stronger differentiation (0.49 vs 0.61 cosine).</li>
+            <li><strong>Nemotron's position effect is smaller</strong> (3-5% vs 6-12%), likely because Mamba layers dominate the position-based signal.</li>
+            <li><strong>Nemotron's Mamba layers are zero-entropy</strong>, which means the model has a built-in speed advantage for long sequences without sacrificing capacity.</li>
+        </ol>
+    </div>
+
+    <div class="footer">
+        <p><strong>Reproduction Details</strong></p>
+        <p>Hardware: Dell Pro Max, NVIDIA GB10 (DGX Spark, SM121), 128 GB unified memory</p>
+        <p>Software: vLLM via Dell Enterprise AI container, FP8 KV cache, Marlin MoE backend, FlashInfer Mamba backend</p>
+        <p>Model: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4</p>
+        <p>Launch: TENSOR_PARALLEL_SIZE=1, MAX_MODEL_LEN=1048576, KV_CACHE_DTYPE=fp8, MOE_BACKEND=marlin, MAMBA_BACKEND=flashinfer, ENABLE_PREFIX_CACHING=true</p>
+        <p>Probe: 20 sessions per dataset, 64 max tokens (multi-turn), 8 decode tokens (single-turn), Top-6 routing, 256 experts</p>
+        <p>Data source: <code>/home/bala/pareto/results/router_probe_nemotron/</code></p>
+        <p>Run metadata: <code>/home/bala/pareto/results/20260811_170807_nemotron_full/run_meta.json</code></p>
+        <p>Date: August 11, 2026</p>
+    </div>
+</div>
+</body>
+</html>

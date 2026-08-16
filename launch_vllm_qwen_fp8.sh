@@ -110,6 +110,8 @@ DOCKER_CMD=(
   --network host
   --restart unless-stopped
   -e HF_TOKEN="${HF_TOKEN}"
+  -e VLLM_MARLIN_USE_ATOMIC_ADD=1
+  -e HF_HUB_DISABLE_XET=1
   -v "${HF_CACHE}:/root/.cache/huggingface"
   "${VLLM_IMAGE}"
   --model "${MODEL_ID}"
@@ -117,7 +119,7 @@ DOCKER_CMD=(
   --tensor-parallel-size 1
   --max-model-len 131072
   --kv-cache-dtype fp8_e4m3
-  --enable-prefix-caching
+  --no-enable-prefix-caching
   --trust-remote-code
   --enforce-eager
   --port 8000

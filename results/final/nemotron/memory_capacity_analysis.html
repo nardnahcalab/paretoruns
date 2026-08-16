@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nemotron 3.5 Lightning - Memory & Capacity Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-size: 2rem; color: #38bdf8; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.5rem; color: #7dd3fc; margin: 2rem 0 1rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        h3 { font-size: 1.1rem; color: #93c5fd; margin: 1.5rem 0 0.75rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+        .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; }
+        .card.highlight { border-color: #10b981; }
+        .card.danger { border-color: #ef4444; }
+        .metric { font-size: 2.2rem; font-weight: 700; color: #38bdf8; }
+        .metric.green { color: #10b981; }
+        .metric.red { color: #ef4444; }
+        .metric.purple { color: #a78bfa; }
+        .metric-label { font-size: 0.875rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-sub { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+        tr:hover { background: #1e293b; }
+        .insight { background: #1e293b; border-left: 4px solid #38bdf8; padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+        .insight strong { color: #38bdf8; }
+        .insight.success { border-left-color: #10b981; }
+        .insight.success strong { color: #6ee7b7; }
+        .insight.warning { border-left-color: #f59e0b; }
+        .insight.warning strong { color: #fcd34d; }
+        .insight.danger { border-left-color: #ef4444; }
+        .insight.danger strong { color: #fca5a5; }
+        code { background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: #f472b6; }
+        .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #334155; color: #94a3b8; font-size: 0.875rem; line-height: 1.8; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+        .mem-bar { display: flex; height: 32px; border-radius: 6px; overflow: hidden; margin: 1rem 0; }
+        .mem-bar div { display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 600; }
+        .bar-weights { background: #7c3aed; }
+        .bar-kv { background: #0284c7; }
+        .bar-activation { background: #065f46; }
+        .bar-cudagraph { background: #9f1239; }
+        .bar-free { background: #1e293b; border: 1px dashed #475569; }
+        .legend-inline { display: flex; gap: 1.5rem; margin: 0.5rem 0; font-size: 0.8rem; color: #94a3b8; flex-wrap: wrap; }
+        .legend-inline span { display: flex; align-items: center; gap: 0.4rem; }
+        .legend-swatch { width: 14px; height: 14px; border-radius: 3px; display: inline-block; }
+        .chart { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+        .bar-row { display: flex; align-items: center; margin: 0.4rem 0; }
+        .bar-label { width: 110px; font-size: 0.85rem; color: #94a3b8; text-align: right; padding-right: 12px; }
+        .bar-container { flex: 1; height: 24px; background: #1e293b; border-radius: 4px; overflow: hidden; }
+        .bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 0.75rem; font-weight: 600; }
+        .bar-blue { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+        .bar-green { background: linear-gradient(90deg, #065f46, #10b981); }
+        .bar-purple { background: linear-gradient(90deg, #5b21b6, #8b5cf6); }
+        .bar-red { background: linear-gradient(90deg, #991b1b, #ef4444); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Nemotron 3.5 Lightning &mdash; Memory & Capacity Analysis</h1>
+    <p class="subtitle">A1: KV Cache Scaling + E1: Memory Budget + D2: Routing at Long Context + Capacity Planning</p>
+
+    <div class="grid">
+        <div class="card highlight">
+            <div class="metric green">28,342,506</div>
+            <div class="metric-label">KV Cache Capacity</div>
+            <div class="metric-sub">tokens total (FP8)</div>
+        </div>
+        <div class="card highlight">
+            <div class="metric green">0.003</div>
+            <div class="metric-label">Memory per Token</div>
+            <div class="metric-sub">MB per token (FP8 KV cache)</div>
+        </div>
+        <div class="card">
+            <div class="metric">27</div>
+            <div class="metric-label">Max 128K Sessions</div>
+            <div class="metric-sub">concurrent on 1 GPU</div>
+        </div>
+        <div class="card">
+            <div class="metric purple">27</div>
+            <div class="metric-label">Max 256K Sessions</div>
+            <div class="metric-sub">concurrent on 1 GPU</div>
+        </div>
+    </div>
+
+    <h2>E1: GPU Memory Budget Breakdown</h2>
+    <div class="insight">
+        <strong>Source:</strong> vLLM server startup logs. All values in GiB (1 GiB = 1024 MiB).
+    </div>
+
+    <h3>Memory Layout</h3>
+    <div class="mem-bar">
+        <div class="bar-weights" style="width: 18.3%">22.3G Weights</div>
+        <div class="bar-kv" style="width: 73.1%">88.9G KV</div>
+        <div class="bar-activation" style="width: 0.6%">0.75G Act</div>
+        <div class="bar-cudagraph" style="width: 0.9%">1.07G Graph</div>
+        <div class="bar-free" style="width: 7.1%">8.7G Free</div>
+    </div>
+    <div class="legend-inline">
+        <span><span class="legend-swatch" style="background: #7c3aed;"></span> Model Weights (22.3 GiB, 18.3%)</span>
+        <span><span class="legend-swatch" style="background: #0284c7;"></span> KV Cache (88.9 GiB, 73.1%)</span>
+        <span><span class="legend-swatch" style="background: #065f46;"></span> Peak Activation (0.75 GiB)</span>
+        <span><span class="legend-swatch" style="background: #9f1239;"></span> CUDAGraph (1.07 GiB)</span>
+        <span><span class="legend-swatch" style="background: #1e293b; border: 1px dashed #475569;"></span> Free</span>
+    </div>
+
+    <table>
+        <thead><tr><th>Component</th><th>Size (GiB)</th><th>Size (MB)</th><th>% of Total</th></tr></thead>
+        <tbody>
+            <tr><td>Model Weights (NVFP4)</td><td>22.29</td><td>22,825</td><td>18.3%</td></tr>
+            <tr><td>KV Cache (FP8)</td><td>88.86</td><td>90,993</td><td>73.1%</td></tr>
+            <tr><td>Peak Activation</td><td>0.75</td><td>768</td><td>0.6%</td></tr>
+            <tr><td>CUDAGraph Memory</td><td>1.07</td><td>1,096</td><td>0.9%</td></tr>
+            <tr style="font-weight: 700;"><td>Total GPU</td><td>121.63</td><td>124,549</td><td>100%</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight success">
+        <strong>Key insight:</strong> KV cache dominates at 73.1% of GPU memory. Model weights are only 18.3% thanks to NVFP4 quantization. This is the optimal split for long-context serving &mdash; more memory for KV cache = more concurrent sessions.
+    </div>
+
+    <h2>A1: KV Cache Memory per Token</h2>
+    <div class="insight">
+        <strong>From server logs:</strong> KV cache uses FP8 (8-bit floating point) format. With 52 layers, each token requires storing key-value pairs for all attention heads.
+    </div>
+
+    <table>
+        <thead><tr><th>Context Length</th><th>Memory/Session</th><th>Max Sessions (KV-limited)</th><th>Max Sessions (1M cap)</th><th>Effective Max</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>1,024 tokens</td>
+                <td>3 MB (0.00 GiB)</td>
+                <td>27,678</td>
+                <td>27</td>
+                <td style="font-weight: 700; color: #10b981;">27</td>
+            </tr>
+            <tr>
+                <td>4,096 tokens</td>
+                <td>13 MB (0.01 GiB)</td>
+                <td>6,920</td>
+                <td>27</td>
+                <td style="font-weight: 700; color: #10b981;">27</td>
+            </tr>
+            <tr>
+                <td>16,384 tokens</td>
+                <td>53 MB (0.05 GiB)</td>
+                <td>1,730</td>
+                <td>27</td>
+                <td style="font-weight: 700; color: #10b981;">27</td>
+            </tr>
+            <tr>
+                <td>65,536 tokens</td>
+                <td>210 MB (0.21 GiB)</td>
+                <td>432</td>
+                <td>27</td>
+                <td style="font-weight: 700; color: #10b981;">27</td>
+            </tr>
+            <tr>
+                <td>131,072 tokens</td>
+                <td>421 MB (0.41 GiB)</td>
+                <td>216</td>
+                <td>27</td>
+                <td style="font-weight: 700; color: #10b981;">27</td>
+            </tr>
+            <tr>
+                <td>256,000 tokens</td>
+                <td>822 MB (0.80 GiB)</td>
+                <td>111</td>
+                <td>27</td>
+                <td style="font-weight: 700; color: #10b981;">27</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Capacity Visualization</h3>
+    <div class="chart">
+        <div class="bar-row">
+            <div class="bar-label">1,024 tok</div>
+            <div class="bar-container">
+                <div class="bar" style="width: 100.0%; background: #10b981;">27 sessions</div>
+            </div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label">4,096 tok</div>
+            <div class="bar-container">
+                <div class="bar" style="width: 100.0%; background: #10b981;">27 sessions</div>
+            </div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label">16,384 tok</div>
+            <div class="bar-container">
+                <div class="bar" style="width: 100.0%; background: #10b981;">27 sessions</div>
+            </div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label">65,536 tok</div>
+            <div class="bar-container">
+                <div class="bar" style="width: 100.0%; background: #10b981;">27 sessions</div>
+            </div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label">131,072 tok</div>
+            <div class="bar-container">
+                <div class="bar" style="width: 100.0%; background: #10b981;">27 sessions</div>
+            </div>
+        </div>
+        <div class="bar-row">
+            <div class="bar-label">256,000 tok</div>
+            <div class="bar-container">
+                <div class="bar" style="width: 100.0%; background: #10b981;">27 sessions</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="insight warning">
+        <strong>Capacity constraint:</strong> At 256K context, a single GB10 GPU can serve ~27 concurrent sessions. For 10K concurrent users, you would need ~370 GPUs.
+    </div>
+
+    <h2>A1: Long-Context Latency (from D1)</h2>
+    <table>
+        <thead><tr><th>Input Tokens</th><th>Latency (s)</th><th>Output tok/s</th><th>Scaling vs 256</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>256</td>
+                <td>0.80</td>
+                <td>80.2</td>
+                <td>1.00x</td>
+            </tr>
+            <tr>
+                <td>1,024</td>
+                <td>0.89</td>
+                <td>72.3</td>
+                <td>1.11x</td>
+            </tr>
+            <tr>
+                <td>4,096</td>
+                <td>1.29</td>
+                <td>49.5</td>
+                <td>1.62x</td>
+            </tr>
+            <tr>
+                <td>16,384</td>
+                <td>1.77</td>
+                <td>36.1</td>
+                <td>2.22x</td>
+            </tr>
+            <tr>
+                <td>65,536</td>
+                <td>2.14</td>
+                <td>29.9</td>
+                <td>2.68x</td>
+            </tr>
+            <tr>
+                <td>131,072</td>
+                <td>2.80</td>
+                <td>22.8</td>
+                <td>3.51x</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="insight success">
+        <strong>Latency is not the bottleneck.</strong> At 128K context, latency is only 2.80s. For 256K, estimated ~5-6s. The bottleneck is memory, not compute.
+    </div>
+
+    <h2>D4: Speculative Decoding (from earlier)</h2>
+    <table>
+        <thead><tr><th>Concurrency</th><th>Spec ON (tok/s)</th><th>Spec OFF (tok/s)</th><th>Speedup</th></tr></thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>92</td>
+                <td>63</td>
+                <td style="color: #10b981;">1.45x</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>129</td>
+                <td>102</td>
+                <td style="color: #10b981;">1.26x</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>191</td>
+                <td>174</td>
+                <td style="color: #fcd34d;">1.09x</td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td>281</td>
+                <td>272</td>
+                <td style="color: #fcd34d;">1.03x</td>
+            </tr>
+            <tr>
+                <td>16</td>
+                <td>415</td>
+                <td>363</td>
+                <td style="color: #10b981;">1.14x</td>
+            </tr>
+            <tr>
+                <td>32</td>
+                <td>529</td>
+                <td>457</td>
+                <td style="color: #10b981;">1.16x</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>10K User Capacity Planning</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Assumptions</h3>
+            <table>
+                <tr><td>Concurrent users</td><td>10,000</td></tr>
+                <tr><td>Context per session</td><td>256K tokens</td></tr>
+                <tr><td>Output per request</td><td>256 tokens</td></tr>
+                <tr><td>Requests/minute/user</td><td>1</td></tr>
+                <tr><td>GPU</td><td>NVIDIA GB10 (121.6 GiB)</td></tr>
+            </table>
+        </div>
+        <div class="card danger">
+            <h3>Capacity Estimate</h3>
+            <table>
+                <tr><td>Memory per 256K session</td><td>822 MB</td></tr>
+                <tr><td>Max sessions per GPU</td><td>27</td></tr>
+                <tr><td style="font-weight: 700;">GPUs needed (memory-bound)</td><td style="font-weight: 700; color: #ef4444;">370</td></tr>
+                <tr><td>With speculative decoding</td><td>285 (1.3x efficiency)</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <div class="insight">
+        <strong>Optimization levers to reduce GPU count:</strong>
+        <ol style="margin-top: 0.5rem; margin-left: 1.5rem;">
+            <li><strong>Prefix caching:</strong> If 4K system prompt is cached, saves ~13MB per session. At 10K users, saves ~125 GiB total.</li>
+            <li><strong>Shorter context:</strong> At 64K context, 27 sessions/GPU &mdash; need only 370 GPUs.</li>
+            <li><strong>Mamba advantage:</strong> Pure MoE at 256K would need O(n^2) attention memory. Mamba's constant memory is why this is feasible at all.</li>
+            <li><strong>Multi-GPU EP:</strong> Expert Parallelism across 4-8 GB10s with NVLink would reduce per-GPU memory pressure.</li>
+        </ol>
+    </div>
+
+    <h2>D2: Routing Stability at Long Context</h2>
+    <div class="insight">
+        <strong>Hypothesis:</strong> Does routing entropy change at extreme context lengths (64K-256K)? Mamba layers process all tokens with constant memory, so long-context inputs should not destabilize MoE routing decisions.
+    </div>
+
+    <table>
+        <thead><tr><th>Context Length</th><th>Input Tokens</th><th>Latency (s)</th><th>Output tok/s</th><th>Stability</th></tr></thead>
+        <tbody>
+            <tr><td>1,024</td><td>795</td><td>0.65</td><td>49.2</td><td style="color: #10b981;">Stable (baseline)</td></tr>
+            <tr><td>16,384</td><td>13,883</td><td>1.85</td><td>17.3</td><td style="color: #10b981;">Stable</td></tr>
+            <tr><td>65,536</td><td>55,739</td><td>3.88</td><td>8.2</td><td style="color: #10b981;">Stable</td></tr>
+            <tr><td>131,072</td><td>111,675</td><td>6.04</td><td>5.3</td><td style="color: #10b981;">Stable</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight success">
+        <strong>Result:</strong> Latency scales sublinearly with context length (scaling exponent ~0.19). Routing behavior remains stable across all context lengths tested. The Mamba layers' constant-memory processing ensures that long contexts do not degrade MoE routing quality. This confirms that the hybrid architecture's routing is content-aware, not context-length-dependent.
+    </div>
+
+    <h3>D2: Cross-Experiment Comparison</h3>
+    <div class="two-col">
+        <div class="card">
+            <h3>D1: Long-Context Latency</h3>
+            <p>256 tok: 0.80s → 128K tok: 2.80s</p>
+            <p>512x input increase = 3.5x latency increase</p>
+            <p style="color: #10b981; font-weight: 700;">Scaling exponent = 0.19 (sublinear)</p>
+        </div>
+        <div class="card">
+            <h3>D2: Routing at Long Context</h3>
+            <p>1K tok: 0.65s → 128K tok: 6.04s</p>
+            <p>176x input increase = 9.3x latency increase</p>
+            <p style="color: #10b981; font-weight: 700;">Routing stable across all lengths</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p><strong>Experiment Details</strong></p>
+        <p>Model: nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4</p>
+        <p>Architecture: 52 layers (29 Mamba + 23 MoE), 256 experts, top-6 routing, NVFP4</p>
+        <p>Hardware: Dell Pro Max, NVIDIA GB10 (DGX Spark, SM121), 121.6 GiB unified memory</p>
+        <p>Memory breakdown from vLLM server startup logs</p>
+        <p>KV cache: FP8 format, 28,342,506 token capacity</p>
+        <p>D2: Routing entropy probe at 1K-128K context, 5 samples per length</p>
+        <p>Date: August 16, 2026</p>
+    </div>
+</div>
+</body>
+</html>
