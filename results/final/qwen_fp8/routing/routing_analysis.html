@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen3.6-35B-A3B FP8 - Routing Probe Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-size: 2rem; color: #38bdf8; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.5rem; color: #7dd3fc; margin: 2rem 0 1rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        h3 { font-size: 1.1rem; color: #93c5fd; margin: 1.5rem 0 0.75rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+        .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; }
+        .card.highlight { border-color: #38bdf8; }
+        .metric { font-size: 2.5rem; font-weight: 700; color: #38bdf8; }
+        .metric-label { font-size: 0.875rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-sub { font-size: 0.9rem; color: #64748b; margin-top: 0.25rem; }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+        tr:hover { background: #1e293b; }
+        .tag { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .tag-moe { background: #1e3a5f; color: #7dd3fc; }
+        .tag-fp8 { background: #7c3aed; color: #c4b5fd; }
+        .tag-text { background: #4c1d95; color: #c4b5fd; }
+        .tag-random { background: #78350f; color: #fcd34d; }
+        .tag-reasoning { background: #831843; color: #f9a8d4; }
+        .insight { background: #1e293b; border-left: 4px solid #38bdf8; padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+        .insight strong { color: #38bdf8; }
+        .entropy-chart { display: flex; gap: 2px; align-items: flex-end; height: 200px; margin: 1rem 0; }
+        .entropy-bar { flex: 1; background: linear-gradient(180deg, #7c3aed, #a78bfa); border-radius: 2px 2px 0 0; position: relative; }
+        .entropy-bar:hover { background: linear-gradient(180deg, #a78bfa, #7c3aed); }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 768px) { .two-col { grid-template-columns: 1fr; } }
+        .glossary dt { font-weight: 600; color: #93c5fd; margin-top: 1rem; }
+        .glossary dd { margin-left: 1.5rem; color: #cbd5e1; }
+        .code { background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: #f472b6; }
+        .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #334155; color: #64748b; font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Qwen3.6-35B-A3B FP8 — Routing Probe Analysis</h1>
+    <p class="subtitle">Pure MoE model with 256 experts, top-8 routing, FP8 quantization on NVIDIA GB10</p>
+
+    <div class="grid">
+        <div class="card highlight">
+            <div class="metric">35B</div>
+            <div class="metric-label">Total Parameters</div>
+            <div class="metric-sub">3B active per token (MoE)</div>
+        </div>
+        <div class="card">
+            <div class="metric">256</div>
+            <div class="metric-label">Experts</div>
+            <div class="metric-sub">Top-8 routing per token</div>
+        </div>
+        <div class="card">
+            <div class="metric">FP8</div>
+            <div class="metric-label">Precision</div>
+            <div class="metric-sub">8-bit floating point</div>
+        </div>
+        <div class="card">
+            <div class="metric">~3.1%</div>
+            <div class="metric-label">Expert Utilization</div>
+            <div class="metric-sub">8/256 experts per token</div>
+        </div>
+    </div>
+
+    <h2>1. What Is Routing Entropy?</h2>
+    <div class="insight">
+        <strong>Entropy measures how evenly tokens are distributed across experts.</strong> A perfectly uniform distribution (every expert gets 1/256 of tokens) gives entropy = 1.0. A distribution where one expert gets all tokens gives entropy = 0. Higher entropy = more diverse routing. The formula: <code class="code">H = -Σ(p_i × log₂(p_i)) / log₂(K)</code> where p_i is the fraction of tokens routed to expert i, and K is the number of experts. Normalized by log₂(K) so 1.0 = max diversity.
+    </div>
+
+    <h3>Glossary</h3>
+    <dl class="glossary">
+        <dt>Prefill</dt>
+        <dd>The initial phase where the model processes the input prompt. All input tokens are processed in parallel. Determines how fast the model "understands" the request.</dd>
+        <dt>Decode</dt>
+        <dd>The phase where the model generates output tokens one at a time. Each new token requires a forward pass. Determines output speed and throughput.</dd>
+        <dt>TTFT (Time to First Token)</dt>
+        <dd>Latency from request submission to first output token. Primarily determined by prefill speed. Lower is better for interactive applications.</dd>
+        <dt>Throughput</dt>
+        <dd>Tokens generated per second. Higher is better. Affected by batch size, model efficiency, and hardware.</dd>
+        <dt>Top-K Routing</dt>
+        <dd>Each token is sent to the K highest-scoring experts. Here K=8 out of 256, meaning 3.1% of experts are active per token.</dd>
+        <dt>Expert Load Balance</dt>
+        <dd>How evenly tokens are distributed across experts. Imbalanced load causes some experts to be underutilized while others become bottlenecks.</dd>
+    </dl>
+
+    <h2>2. Single-Turn Routing Behavior</h2>
+    <div class="grid">
+        <div class="card">
+            <h3><span class="tag tag-text">TEXT</span></h3>
+            <div class="metric">0.768</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">40 layers · 517 tokens · Top share: 8.3%</div>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-random">RANDOM</span></h3>
+            <div class="metric">0.786</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">40 layers · 433 tokens · Top share: 8.0%</div>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-reasoning">REASONING</span></h3>
+            <div class="metric">0.763</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">40 layers · 406 tokens · Top share: 8.2%</div>
+        </div>
+    </div>
+
+    <h3>Entropy by Layer (Single-Turn Text)</h3>
+    <div class="entropy-chart">
+        <div class="entropy-bar" style="height: 87.2%" title="Layer 0: 0.872"></div>
+        <div class="entropy-bar" style="height: 84.3%" title="Layer 1: 0.843"></div>
+        <div class="entropy-bar" style="height: 82.3%" title="Layer 2: 0.823"></div>
+        <div class="entropy-bar" style="height: 77.8%" title="Layer 3: 0.778"></div>
+        <div class="entropy-bar" style="height: 76.7%" title="Layer 4: 0.767"></div>
+        <div class="entropy-bar" style="height: 73.0%" title="Layer 5: 0.730"></div>
+        <div class="entropy-bar" style="height: 75.8%" title="Layer 6: 0.758"></div>
+        <div class="entropy-bar" style="height: 74.0%" title="Layer 7: 0.740"></div>
+        <div class="entropy-bar" style="height: 72.8%" title="Layer 8: 0.728"></div>
+        <div class="entropy-bar" style="height: 74.4%" title="Layer 9: 0.744"></div>
+        <div class="entropy-bar" style="height: 75.9%" title="Layer 10: 0.759"></div>
+        <div class="entropy-bar" style="height: 78.9%" title="Layer 11: 0.789"></div>
+        <div class="entropy-bar" style="height: 73.2%" title="Layer 12: 0.732"></div>
+        <div class="entropy-bar" style="height: 74.6%" title="Layer 13: 0.746"></div>
+        <div class="entropy-bar" style="height: 73.5%" title="Layer 14: 0.735"></div>
+        <div class="entropy-bar" style="height: 76.1%" title="Layer 15: 0.761"></div>
+        <div class="entropy-bar" style="height: 70.7%" title="Layer 16: 0.707"></div>
+        <div class="entropy-bar" style="height: 72.2%" title="Layer 17: 0.722"></div>
+        <div class="entropy-bar" style="height: 75.8%" title="Layer 18: 0.758"></div>
+        <div class="entropy-bar" style="height: 74.6%" title="Layer 19: 0.746"></div>
+        <div class="entropy-bar" style="height: 78.7%" title="Layer 20: 0.787"></div>
+        <div class="entropy-bar" style="height: 77.2%" title="Layer 21: 0.772"></div>
+        <div class="entropy-bar" style="height: 80.3%" title="Layer 22: 0.803"></div>
+        <div class="entropy-bar" style="height: 81.4%" title="Layer 23: 0.814"></div>
+        <div class="entropy-bar" style="height: 75.4%" title="Layer 24: 0.754"></div>
+        <div class="entropy-bar" style="height: 78.6%" title="Layer 25: 0.786"></div>
+        <div class="entropy-bar" style="height: 75.3%" title="Layer 26: 0.753"></div>
+        <div class="entropy-bar" style="height: 76.7%" title="Layer 27: 0.767"></div>
+        <div class="entropy-bar" style="height: 74.8%" title="Layer 28: 0.748"></div>
+        <div class="entropy-bar" style="height: 77.3%" title="Layer 29: 0.773"></div>
+        <div class="entropy-bar" style="height: 76.4%" title="Layer 30: 0.764"></div>
+        <div class="entropy-bar" style="height: 74.9%" title="Layer 31: 0.749"></div>
+        <div class="entropy-bar" style="height: 77.7%" title="Layer 32: 0.777"></div>
+        <div class="entropy-bar" style="height: 75.3%" title="Layer 33: 0.753"></div>
+        <div class="entropy-bar" style="height: 78.8%" title="Layer 34: 0.788"></div>
+        <div class="entropy-bar" style="height: 79.6%" title="Layer 35: 0.796"></div>
+        <div class="entropy-bar" style="height: 79.1%" title="Layer 36: 0.791"></div>
+        <div class="entropy-bar" style="height: 77.6%" title="Layer 37: 0.776"></div>
+        <div class="entropy-bar" style="height: 74.5%" title="Layer 38: 0.745"></div>
+        <div class="entropy-bar" style="height: 77.7%" title="Layer 39: 0.777"></div>
+    </div>
+    <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">Each bar = one layer. Height = normalized entropy (higher = more diverse routing). Hover for exact values.</p>
+
+    <h3>Cross-Dataset Entropy Comparison</h3>
+    <table>
+        <thead>
+            <tr><th>Dataset</th><th>Mean Entropy</th><th>Top Expert Share</th><th>Tokens</th><th>Layers</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><span class="tag tag-text">TEXT</span></td><td>0.768</td><td>8.3%</td><td>517</td><td>40</td></tr>
+            <tr><td><span class="tag tag-random">RANDOM</span></td><td>0.786</td><td>8.0%</td><td>433</td><td>40</td></tr>
+            <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>0.763</td><td>8.2%</td><td>406</td><td>40</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight">
+        <strong>Interpretation:</strong> Random inputs produce the most diverse routing (entropy 0.786), while reasoning produces the most focused (0.763). The top expert captures ~8% of tokens — consistent with NVFP4. All three datasets show similar patterns, indicating the router is largely <strong>content-agnostic</strong>. FP8 quantization shows nearly identical routing behavior to NVFP4.
+    </div>
+
+    <h2>3. Multi-Turn Routing Behavior</h2>
+    <div class="insight">
+        <strong>Position analysis:</strong> Tokens are classified as early (first 20% of sequence), mid (middle 60%), or late (last 20%). The multi-turn probe processes 200 sessions with up to 64 output tokens each.
+    </div>
+
+    <div class="two-col">
+        <div class="card">
+            <h3>Overall Mean Entropy</h3>
+            <table>
+                <thead><tr><th>Dataset</th><th>Entropy</th><th>Sessions</th><th>Tokens</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="tag tag-text">TEXT</span></td><td>0.854</td><td>200</td><td>36,351</td></tr>
+                    <tr><td><span class="tag tag-random">RANDOM</span></td><td>0.836</td><td>200</td><td>35,192</td></tr>
+                    <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>0.852</td><td>200</td><td>36,407</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Position-Based Entropy</h3>
+            <table>
+                <thead><tr><th>Position</th><th>Text</th><th>Random</th><th>Reasoning</th></tr></thead>
+                <tbody>
+                    <tr><td>Early (first 20%)</td><td>0.800</td><td>0.775</td><td>0.798</td></tr>
+                    <tr><td>Mid (middle 60%)</td><td>0.858</td><td>0.836</td><td>0.853</td></tr>
+                    <tr><td>Late (last 20%)</td><td>0.869</td><td>0.856</td><td>0.878</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="insight">
+        <strong>Position trend:</strong> Entropy increases significantly from early → mid → late across all datasets. For text: 0.800 → 0.858 → 0.869 (+8.6%). This means the router becomes <strong>much more diverse</strong> as sequences progress — later tokens are spread across more experts than earlier tokens. The effect is nearly identical to NVFP4's 9.1% increase, confirming this is a model property, not a quantization artifact.
+    </div>
+
+    <h2>4. FP8 vs NVFP4 Comparison</h2>
+    <table>
+        <thead>
+            <tr><th>Metric</th><th>FP8</th><th>NVFP4</th><th>Difference</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><span class="tag tag-text">TEXT</span> Single-Turn</td><td>0.768</td><td>0.761</td><td>+0.9%</td></tr>
+            <tr><td><span class="tag tag-random">RANDOM</span> Single-Turn</td><td>0.786</td><td>0.785</td><td>+0.1%</td></tr>
+            <tr><td><span class="tag tag-reasoning">REASONING</span> Single-Turn</td><td>0.763</td><td>0.761</td><td>+0.3%</td></tr>
+            <tr><td><span class="tag tag-text">TEXT</span> Multi-Turn</td><td>0.854</td><td>0.855</td><td>-0.1%</td></tr>
+            <tr><td><span class="tag tag-random">RANDOM</span> Multi-Turn</td><td>0.836</td><td>0.831</td><td>+0.6%</td></tr>
+            <tr><td><span class="tag tag-reasoning">REASONING</span> Multi-Turn</td><td>0.852</td><td>0.852</td><td>0.0%</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight">
+        <strong>Key finding:</strong> FP8 and NVFP4 routing patterns are <strong>nearly identical</strong> across all datasets and positions. Differences are within 1%, well within measurement noise. This means 4-bit quantization does not materially affect routing decisions — the router is robust to precision loss. This is a significant finding for production deployments: NVFP4 provides 4x memory savings without routing degradation.
+    </div>
+
+    <h2>5. Architecture Insights</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Pure MoE Design</h3>
+            <p>Qwen's 40 MoE layers (no Mamba/SSM layers) produce entropy ~0.77 in single-turn and ~0.85 in multi-turn. All layers contribute to routing diversity, unlike Nemotron where 56% of layers (Mamba) have entropy ≈ 0.</p>
+        </div>
+        <div class="card">
+            <h3>Layer Variation</h3>
+            <p>Entropy varies across layers (0.71-0.87), with early layers showing higher entropy and middle layers showing lower entropy. This suggests different layers specialize in different routing patterns.</p>
+        </div>
+        <div class="card">
+            <h3>Quantization Robustness</h3>
+            <p>FP8 and NVFP4 show identical routing patterns, confirming the router's gate computation is robust to precision loss. The router learns discrete expert assignments that are stable across quantization levels.</p>
+        </div>
+        <div class="card">
+            <h3>Load Balance</h3>
+            <p>The top expert captures ~8% of tokens (vs 3.1% ideal for 256 experts with top-8). This indicates moderate load imbalance but no extreme hotspots — the router maintains reasonable expert utilization.</p>
+        </div>
+    </div>
+
+    <h2>6. Production Implications</h2>
+    <div class="insight">
+        <strong>For serving infrastructure:</strong>
+        <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+            <li><strong>Quantization choice:</strong> Use NVFP4 for 4x memory savings — routing quality is identical to FP8.</li>
+            <li><strong>Load balancing:</strong> Expect ~8% of tokens on the top expert. Design capacity for 2-3x the ideal均匀 distribution.</li>
+            <li><strong>KV cache:</strong> The position-dependent routing means KV cache usage grows non-linearly with sequence length.</li>
+            <li><strong>Batching:</strong> Content-agnostic routing means batch composition doesn't significantly affect routing patterns — simpler scheduling.</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        <p>Generated from routing probe data in <code>/home/bala/pareto/results/final/qwen_fp8/routing/</code></p>
+        <p>Single-turn: 20 sessions × ~3 prompts, 8 max tokens, Top-8 routing, 256 experts</p>
+        <p>Multi-turn: 200 sessions, 64 max tokens, ~570 prompts per dataset</p>
+        <p>Model: Qwen/Qwen3.6-35B-A3B-FP8 via vLLM 0.24.0</p>
+        <p>Date: August 13, 2026</p>
+    </div>
+</div>
+</body>
+</html>

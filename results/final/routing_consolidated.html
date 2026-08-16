@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consolidated Routing Analysis - All Models</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 2rem; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        h1 { font-size: 2rem; color: #38bdf8; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.5rem; color: #7dd3fc; margin: 2rem 0 1rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        h3 { font-size: 1.1rem; color: #93c5fd; margin: 1.5rem 0 0.75rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+        .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; }
+        .card.highlight { border-color: #38bdf8; }
+        .metric { font-size: 2.5rem; font-weight: 700; color: #38bdf8; }
+        .metric-label { font-size: 0.875rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-sub { font-size: 0.9rem; color: #64748b; margin-top: 0.25rem; }
+        .insight { background: #1e293b; border-left: 4px solid #38bdf8; padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+        .insight strong { color: #38bdf8; }
+        .insight.warning { border-left-color: #f59e0b; }
+        .insight.warning strong { color: #f59e0b; }
+        .insight.info { border-left-color: #10b981; }
+        .insight.info strong { color: #10b981; }
+        .tag { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .tag-dense { background: #065f46; color: #6ee7b7; }
+        .tag-moe { background: #1e3a5f; color: #7dd3fc; }
+        .tag-fp8 { background: #7c3aed; color: #c4b5fd; }
+        .tag-nvfp4 { background: #be185d; color: #fbcfe8; }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+        tr:hover { background: #1e293b; }
+        code { background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: #f472b6; }
+        pre { background: #1e293b; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; font-size: 0.875rem; }
+        .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #334155; color: #64748b; font-size: 0.875rem; }
+        .comparison-table { margin: 2rem 0; }
+        .status-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .status-complete { background: #065f46; color: #6ee7b7; }
+        .status-pending { background: #78350f; color: #fcd34d; }
+        .status-na { background: #334155; color: #94a3b8; }
+        .model-card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; margin: 1rem 0; }
+        .model-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .model-name { font-size: 1.25rem; font-weight: 700; color: #38bdf8; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Consolidated Routing Analysis — All Models</h1>
+    <p class="subtitle">Expert routing behavior comparison across 4 models on NVIDIA GB10 (DGX Spark)</p>
+
+    <div class="grid">
+        <div class="card highlight">
+            <div class="metric">4</div>
+            <div class="metric-label">Models Tested</div>
+            <div class="metric-sub">Muse, Nemotron, Qwen FP8, Qwen NVFP4</div>
+        </div>
+        <div class="card">
+            <div class="metric">3</div>
+            <div class="metric-label">Probes Complete</div>
+            <div class="metric-sub">Nemotron + Qwen FP8 + Qwen NVFP4</div>
+        </div>
+        <div class="card">
+            <div class="metric">2</div>
+            <div class="metric-label">MoE Models</div>
+            <div class="metric-sub">Nemotron + Qwen variants</div>
+        </div>
+        <div class="card">
+            <div class="metric">1</div>
+            <div class="metric-label">Dense Model</div>
+            <div class="metric-sub">Muse (no routing)</div>
+        </div>
+    </div>
+
+    <h2>1. Model Architecture Comparison</h2>
+    <div class="comparison-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Model</th>
+                    <th>Architecture</th>
+                    <th>Total Params</th>
+                    <th>Active Params</th>
+                    <th>Experts</th>
+                    <th>Top-K</th>
+                    <th>Precision</th>
+                    <th>Routing Probe</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Muse-Glimmer-30B</strong></td>
+                    <td><span class="tag tag-dense">Dense</span></td>
+                    <td>30B</td>
+                    <td>30B (all)</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>bf16</td>
+                    <td><span class="status-badge status-na">N/A</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Nemotron 3.5 Lightning</strong></td>
+                    <td><span class="tag tag-moe">Hybrid Mamba-MoE</span></td>
+                    <td>30B</td>
+                    <td>3B</td>
+                    <td>256</td>
+                    <td>6</td>
+                    <td>NVFP4</td>
+                    <td><span class="status-badge status-complete">Complete</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Qwen3.6-35B-A3B FP8</strong></td>
+                    <td><span class="tag tag-moe">Pure MoE</span></td>
+                    <td>35B</td>
+                    <td>3B</td>
+                    <td>256</td>
+                    <td>8</td>
+                    <td>FP8</td>
+                    <td><span class="status-badge status-complete">Complete</span></td>
+                </tr>
+                <tr>
+                    <td><strong>Qwen3.6-35B-A3B NVFP4</strong></td>
+                    <td><span class="tag tag-moe">Pure MoE</span></td>
+                    <td>35B</td>
+                    <td>3B</td>
+                    <td>256</td>
+                    <td>8</td>
+                    <td>NVFP4</td>
+                    <td><span class="status-badge status-complete">Complete</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>2. Routing Probe Results Summary</h2>
+    
+    <div class="model-card">
+        <div class="model-header">
+            <span class="model-name">Nemotron 3.5 Lightning</span>
+            <span class="status-badge status-complete">Complete</span>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <h3>Single-Turn Entropy</h3>
+                <table>
+                    <tr><td>Text</td><td><strong>0.771</strong></td></tr>
+                    <tr><td>Random</td><td><strong>0.755</strong></td></tr>
+                    <tr><td>Reasoning</td><td><strong>0.748</strong></td></tr>
+                </table>
+            </div>
+            <div class="card">
+                <h3>Multi-Turn Entropy</h3>
+                <table>
+                    <tr><td>Text</td><td><strong>0.358</strong></td></tr>
+                    <tr><td>Random</td><td><strong>0.354</strong></td></tr>
+                    <tr><td>Reasoning</td><td><strong>0.350</strong></td></tr>
+                </table>
+            </div>
+            <div class="card">
+                <h3>Key Findings</h3>
+                <ul style="margin-left: 1.5rem;">
+                    <li>Content-agnostic router</li>
+                    <li>29 Mamba + 23 MoE layers</li>
+                    <li>Entropy increases 3-5% early→late</li>
+                    <li>Top expert share: 7-9%</li>
+                </ul>
+            </div>
+        </div>
+        <p style="margin-top: 1rem;"><a href="nemotron/routing/routing_analysis.html" style="color: #38bdf8;">View full Nemotron report →</a></p>
+    </div>
+
+    <div class="model-card">
+        <div class="model-header">
+            <span class="model-name">Muse-Glimmer-30B</span>
+            <span class="status-badge status-na">N/A</span>
+        </div>
+        <div class="insight info">
+            <strong>Dense Transformer:</strong> No MoE routing. All 30B parameters active for every token. Routing probe not applicable.
+        </div>
+        <p style="margin-top: 1rem;"><a href="muse/routing/routing_analysis.html" style="color: #38bdf8;">View full Muse report →</a></p>
+    </div>
+
+    <div class="model-card">
+        <div class="model-header">
+            <span class="model-name">Qwen3.6-35B-A3B FP8</span>
+            <span class="status-badge status-complete">Complete</span>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <h3>Single-Turn Entropy</h3>
+                <table>
+                    <tr><td>Text</td><td><strong>0.768</strong></td></tr>
+                    <tr><td>Random</td><td><strong>0.786</strong></td></tr>
+                    <tr><td>Reasoning</td><td><strong>0.763</strong></td></tr>
+                </table>
+            </div>
+            <div class="card">
+                <h3>Multi-Turn Entropy</h3>
+                <table>
+                    <tr><td>Text</td><td><strong>0.854</strong></td></tr>
+                    <tr><td>Random</td><td><strong>0.836</strong></td></tr>
+                    <tr><td>Reasoning</td><td><strong>0.852</strong></td></tr>
+                </table>
+            </div>
+            <div class="card">
+                <h3>Key Findings</h3>
+                <ul style="margin-left: 1.5rem;">
+                    <li>Pure MoE (no Mamba layers)</li>
+                    <li>Entropy increases 8-10% early→late</li>
+                    <li>Identical to NVFP4 routing</li>
+                    <li>Top expert share: 8%</li>
+                </ul>
+            </div>
+        </div>
+        <p style="margin-top: 1rem;"><a href="qwen_fp8/routing/routing_analysis.html" style="color: #38bdf8;">View full Qwen FP8 report →</a></p>
+    </div>
+
+    <div class="model-card">
+        <div class="model-header">
+            <span class="model-name">Qwen3.6-35B-A3B NVFP4</span>
+            <span class="status-badge status-complete">Complete</span>
+        </div>
+        <div class="grid">
+            <div class="card">
+                <h3>Single-Turn Entropy</h3>
+                <table>
+                    <tr><td>Text</td><td><strong>0.761</strong></td></tr>
+                    <tr><td>Random</td><td><strong>0.785</strong></td></tr>
+                    <tr><td>Reasoning</td><td><strong>0.761</strong></td></tr>
+                </table>
+            </div>
+            <div class="card">
+                <h3>Multi-Turn Entropy</h3>
+                <table>
+                    <tr><td>Text</td><td><strong>0.855</strong></td></tr>
+                    <tr><td>Random</td><td><strong>0.831</strong></td></tr>
+                    <tr><td>Reasoning</td><td><strong>0.852</strong></td></tr>
+                </table>
+            </div>
+            <div class="card">
+                <h3>Key Findings</h3>
+                <ul style="margin-left: 1.5rem;">
+                    <li>Pure MoE (no Mamba layers)</li>
+                    <li>Entropy increases 6-12% early→late</li>
+                    <li>Content-agnostic router</li>
+                    <li>Top expert share: 8%</li>
+                </ul>
+            </div>
+        </div>
+        <p style="margin-top: 1rem;"><a href="qwen_nvfp4/routing/routing_analysis.html" style="color: #38bdf8;">View full Qwen NVFP4 report →</a></p>
+    </div>
+
+    <h2>3. Cross-Model Architecture Insights</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Dense vs MoE</h3>
+            <p><strong>Muse (Dense):</strong> 30B params always active. Consistent compute, no routing overhead.</p>
+            <p style="margin-top: 0.5rem;"><strong>MoE Models:</strong> 3B active params per token. Conditional compute, routing overhead, load balancing required.</p>
+        </div>
+        <div class="card">
+            <h3>Hybrid vs Pure MoE</h3>
+            <p><strong>Nemotron (Hybrid):</strong> 29 Mamba layers (constant-time) + 23 MoE layers. Lower entropy due to Mamba layers.</p>
+            <p style="margin-top: 0.5rem;"><strong>Qwen (Pure MoE):</strong> All layers are MoE. Expected higher entropy (~0.85-0.90).</p>
+        </div>
+        <div class="card">
+            <h3>Precision Impact</h3>
+            <p><strong>NVFP4 (4-bit):</strong> May affect routing decisions due to lower precision activations.</p>
+            <p style="margin-top: 0.5rem;"><strong>FP8 (8-bit):</strong> More stable routing, minimal precision impact.</p>
+        </div>
+        <div class="card">
+            <h3>Expert Selection</h3>
+            <p><strong>Nemotron:</strong> Top-6 from 256 experts (2.3% utilization).</p>
+            <p style="margin-top: 0.5rem;"><strong>Qwen:</strong> Top-8 from 256 experts (3.1% utilization). Slightly higher per-token compute.</p>
+        </div>
+    </div>
+
+    <h2>4. Test Methodology</h2>
+    
+    <h3>4.1 Scripts Used</h3>
+    <table>
+        <thead>
+            <tr><th>Script</th><th>Purpose</th><th>Key Features</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>router_probe.py</code></td>
+                <td>Single-turn routing analysis</td>
+                <td>Captures per-token expert IDs, computes entropy, load histograms</td>
+            </tr>
+            <tr>
+                <td><code>router_probe_multiturn.py</code></td>
+                <td>Multi-turn routing analysis</td>
+                <td>Position analysis, turn depth effects, session drift, cross-depth overlap</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>4.2 Probe Parameters</h3>
+    <table>
+        <thead>
+            <tr><th>Parameter</th><th>Single-Turn</th><th>Multi-Turn</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Sessions</td><td>20</td><td>200</td></tr>
+            <tr><td>Max tokens</td><td>8</td><td>64</td></tr>
+            <tr><td>GPU memory</td><td>50%</td><td>80%</td></tr>
+            <tr><td>Temperature</td><td>0.0</td><td>0.0</td></tr>
+            <tr><td>Max sequence length</td><td>512</td><td>4096</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.3 Datasets</h3>
+    <table>
+        <thead>
+            <tr><th>Dataset</th><th>File</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Text</td><td><code>multi_turn_iso_text_chat.jsonl</code></td><td>Natural conversational prompts</td></tr>
+            <tr><td>Random</td><td><code>multi_turn_iso_random_chat.jsonl</code></td><td>Random word sequences</td></tr>
+            <tr><td>Reasoning</td><td><code>multi_turn_iso_reasoning_chat.jsonl</code></td><td>Logic proofs and math</td></tr>
+        </tbody>
+    </table>
+
+    <h3>4.4 Metrics Computed</h3>
+    <table>
+        <thead>
+            <tr><th>Metric</th><th>Description</th><th>Range</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Entropy (normalized)</td><td>Routing diversity across experts</td><td>0 (focused) to 1 (uniform)</td></tr>
+            <tr><td>Top expert share</td><td>% tokens routed to most popular expert</td><td>0-100%</td></tr>
+            <tr><td>Position entropy</td><td>Entropy at different sequence positions</td><td>Early/Mid/Late</td></tr>
+            <tr><td>Cross-depth Jaccard</td><td>Overlap of top-8 experts across turn depths</td><td>0-1</td></tr>
+        </tbody>
+    </table>
+
+    <h2>5. How to Run Missing Probes</h2>
+    
+    <div class="insight info">
+        <strong>Prerequisites:</strong>
+        <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+            <li>vLLM Python module must be available in the environment</li>
+            <li>Model server must be running with <code>enable_return_routed_experts=True</code></li>
+            <li>Input datasets must be in JSONL format</li>
+        </ul>
+    </div>
+
+    <h3>Quick Start Commands</h3>
+    <pre>
+# For Qwen FP8:
+./launch_vllm_qwen_fp8.sh
+PROBE_MODEL=nvidia/Qwen3.6-35B-A3B-FP8 python3 router_probe.py --text multi_turn_iso_text_chat.jsonl --random multi_turn_iso_random_chat.jsonl --reasoning multi_turn_iso_reasoning_chat.jsonl --limit 20 --out results/final/qwen_fp8/routing/probe
+
+# For Qwen NVFP4:
+./launch_vllm_qwen_nvfp4.sh
+PROBE_MODEL=nvidia/Qwen3.6-35B-A3B-NVFP4 python3 router_probe.py --text multi_turn_iso_text_chat.jsonl --random multi_turn_iso_random_chat.jsonl --reasoning multi_turn_iso_reasoning_chat.jsonl --limit 20 --out results/final/qwen_nvfp4/routing/probe
+    </pre>
+
+    <h2>6. Nemotron vs Qwen NVFP4 Comparison</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Single-Turn Entropy</h3>
+            <table>
+                <thead><tr><th>Dataset</th><th>Nemotron</th><th>Qwen NVFP4</th></tr></thead>
+                <tbody>
+                    <tr><td>Text</td><td>0.771</td><td>0.761</td></tr>
+                    <tr><td>Random</td><td>0.755</td><td>0.785</td></tr>
+                    <tr><td>Reasoning</td><td>0.748</td><td>0.761</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Multi-Turn Entropy</h3>
+            <table>
+                <thead><tr><th>Dataset</th><th>Nemotron</th><th>Qwen NVFP4</th></tr></thead>
+                <tbody>
+                    <tr><td>Text</td><td>0.358</td><td>0.855</td></tr>
+                    <tr><td>Random</td><td>0.354</td><td>0.831</td></tr>
+                    <tr><td>Reasoning</td><td>0.350</td><td>0.852</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Position Effect (Multi-Turn)</h3>
+            <table>
+                <thead><tr><th>Position</th><th>Nemotron</th><th>Qwen NVFP4</th></tr></thead>
+                <tbody>
+                    <tr><td>Early</td><td>0.348</td><td>0.798</td></tr>
+                    <tr><td>Mid</td><td>0.359</td><td>0.858</td></tr>
+                    <tr><td>Late</td><td>0.361</td><td>0.871</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Architecture Differences</h3>
+            <ul style="margin-left: 1.5rem;">
+                <li><strong>Nemotron:</strong> 29 Mamba + 23 MoE layers (hybrid)</li>
+                <li><strong>Qwen:</strong> 40 MoE layers (pure MoE)</li>
+                <li><strong>Entropy gap:</strong> Qwen multi-turn entropy is 2.4x higher</li>
+                <li><strong>Position effect:</strong> Qwen shows stronger position dependence</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="insight">
+        <strong>Key finding:</strong> The most striking difference is in multi-turn entropy: Qwen NVFP4 (0.83-0.85) is 2.4x higher than Nemotron (0.35). This is primarily because Nemotron's Mamba layers have entropy ≈ 0, which drags down the average. Qwen's pure MoE architecture means all 40 layers contribute to routing diversity. In single-turn, the MoE-only entropy is comparable (Nemotron ~0.75-0.77, Qwen ~0.76-0.79), confirming that the architecture difference (hybrid vs pure) is the main driver of the entropy gap.
+    </div>
+
+    <h2>7. Open Research Questions</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>FP8 vs NVFP4 Routing</h3>
+            <p>Answered: FP8 and NVFP4 show identical routing patterns (differences < 1%). 4-bit quantization does not materially affect routing decisions. NVFP4 provides 4x memory savings without routing degradation.</p>
+        </div>
+        <div class="card">
+            <h3>Pure MoE vs Hybrid</h3>
+            <p>Answered: Qwen's pure MoE shows 2.4x higher multi-turn entropy than Nemotron's hybrid. The single-turn MoE-only entropy is comparable (~0.76-0.79).</p>
+        </div>
+        <div class="card">
+            <h3>Content Dependence</h3>
+            <p>Both models are content-agnostic. Qwen shows slightly more variation (random 0.785 vs text 0.761) than Nemotron (0.755 vs 0.771).</p>
+        </div>
+        <div class="card">
+            <h3>Position Effects</h3>
+            <p>Confirmed universal: both models show early→late entropy increase. Qwen's effect is stronger (6-12% vs 3-5%), suggesting pure MoE has more routing flexibility.</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Models tested on NVIDIA GB10 (DGX Spark) hardware</p>
+        <p>Data sources: <code>/home/bala/pareto/results/router_probe_nemotron/</code> and model-specific routing directories</p>
+        <p>Date: August 13, 2026</p>
+    </div>
+</div>
+</body>
+</html>

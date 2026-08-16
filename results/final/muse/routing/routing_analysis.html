@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muse-Glimmer-30B - Routing Analysis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; line-height: 1.6; padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-size: 2rem; color: #38bdf8; margin-bottom: 0.5rem; }
+        h2 { font-size: 1.5rem; color: #7dd3fc; margin: 2rem 0 1rem; border-bottom: 1px solid #334155; padding-bottom: 0.5rem; }
+        h3 { font-size: 1.1rem; color: #93c5fd; margin: 1.5rem 0 0.75rem; }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+        .card { background: #1e293b; border-radius: 12px; padding: 1.5rem; border: 1px solid #334155; }
+        .card.highlight { border-color: #38bdf8; }
+        .metric { font-size: 2.5rem; font-weight: 700; color: #38bdf8; }
+        .metric-label { font-size: 0.875rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-sub { font-size: 0.9rem; color: #64748b; margin-top: 0.25rem; }
+        .insight { background: #1e293b; border-left: 4px solid #38bdf8; padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
+        .insight strong { color: #38bdf8; }
+        .insight.warning { border-left-color: #f59e0b; }
+        .insight.warning strong { color: #f59e0b; }
+        .tag { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .tag-dense { background: #065f46; color: #6ee7b7; }
+        .tag-moe { background: #1e3a5f; color: #7dd3fc; }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+        code { background: #1e293b; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.875rem; color: #f472b6; }
+        .footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #334155; color: #64748b; font-size: 0.875rem; }
+        .comparison-box { background: #1e293b; border: 2px solid #334155; border-radius: 12px; padding: 2rem; margin: 2rem 0; }
+        .vs { display: flex; align-items: center; gap: 2rem; }
+        .vs-item { flex: 1; text-align: center; }
+        .vs-divider { font-size: 2rem; color: #64748b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Muse-Glimmer-30B — Routing Analysis</h1>
+    <p class="subtitle">Architecture analysis for meta-models/Muse-Glimmer-30B on Dell Enterprise AI</p>
+
+    <div class="insight warning">
+        <strong>No MoE Routing:</strong> Muse-Glimmer-30B is a <strong>Dense Transformer</strong> (not a Mixture-of-Experts model). It does not have a router or expert selection mechanism. Every token passes through all parameters in every layer. This report documents the architectural differences and explains why routing probes are not applicable.
+    </div>
+
+    <h2>1. Architecture Overview</h2>
+    <div class="grid">
+        <div class="card highlight">
+            <div class="metric">30B</div>
+            <div class="metric-label">Total Parameters</div>
+            <div class="metric-sub">All parameters active for every token</div>
+        </div>
+        <div class="card">
+            <div class="metric">Dense</div>
+            <div class="metric-label">Architecture Type</div>
+            <div class="metric-sub">Standard Transformer (no MoE)</div>
+        </div>
+        <div class="card">
+            <div class="metric">bf16</div>
+            <div class="metric-label">Precision</div>
+            <div class="metric-sub">16-bit brain float</div>
+        </div>
+        <div class="card">
+            <div class="metric">N/A</div>
+            <div class="metric-label">Router</div>
+            <div class="metric-sub">No expert selection</div>
+        </div>
+    </div>
+
+    <h2>2. Dense vs MoE Architecture</h2>
+    
+    <div class="comparison-box">
+        <div class="vs">
+            <div class="vs-item">
+                <h3><span class="tag tag-dense">MUSE (Dense)</span></h3>
+                <ul style="text-align: left; margin-top: 1rem; list-style: none;">
+                    <li>✅ 30B parameters active per token</li>
+                    <li>✅ Consistent compute across all inputs</li>
+                    <li>✅ No routing overhead</li>
+                    <li>✅ Predictable memory usage</li>
+                    <li>❌ Higher compute per token</li>
+                    <li>❌ No conditional computation</li>
+                </ul>
+            </div>
+            <div class="vs-divider">VS</div>
+            <div class="vs-item">
+                <h3><span class="tag tag-moe">NEMOTRON/QWEN (MoE)</span></h3>
+                <ul style="text-align: left; margin-top: 1rem; list-style: none;">
+                    <li>✅ 3B active params per token (conditional)</li>
+                    <li>✅ Lower compute per token</li>
+                    <li>✅ Expert specialization</li>
+                    <li>✅ Higher total capacity</li>
+                    <li>❌ Routing overhead</li>
+                    <li>❌ Load balancing challenges</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h2>3. Why Routing Probes Don't Apply</h2>
+    <div class="insight">
+        <strong>Routing Probe Purpose:</strong> The routing probe (<code>router_probe.py</code>) captures per-token expert selection from vLLM's <code>enable_return_routed_experts</code> flag. This flag only works with MoE models that have a router module (like Qwen3.6-35B-A3B or Nemotron's Gated DeltaNet MoE layers).
+    </div>
+
+    <table>
+        <thead>
+            <tr><th>Feature</th><th>Muse (Dense)</th><th>Nemotron (MoE)</th><th>Qwen (MoE)</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Expert Selection</td><td>None - all params used</td><td>Top-6 from 256 experts</td><td>Top-8 from 256 experts</td></tr>
+            <tr><td>Router Module</td><td>❌ Not present</td><td>✅ Present</td><td>✅ Present</td></tr>
+            <tr><td>routed_experts output</td><td>❌ Not available</td><td>✅ Available</td><td>✅ Available</td></tr>
+            <tr><td>Conditional Compute</td><td>❌ No</td><td>✅ Yes</td><td>✅ Yes</td></tr>
+            <tr><td>Expert Load Balancing</td><td>N/A</td><td>Required</td><td>Required</td></tr>
+        </tbody>
+    </table>
+
+    <h2>4. Performance Implications</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Throughput Characteristics</h3>
+            <p>Muse processes all 30B parameters for every token, which means:</p>
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                <li>Higher FLOPs per token</li>
+                <li>More consistent latency (no routing variance)</li>
+                <li>Better for small batch sizes</li>
+                <li>May underperform MoE at high concurrency</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Memory Characteristics</h3>
+            <p>Dense models have different memory profiles:</p>
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                <li>All 30B params must be in memory</li>
+                <li>No expert offloading possible</li>
+                <li>KV cache is the main variable</li>
+                <li>FP8/INT4 quantization helps significantly</li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>5. Recommendation</h2>
+    <div class="insight">
+        <strong>For routing analysis, focus on:</strong>
+        <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+            <li><strong>Nemotron 3.5 Lightning:</strong> Hybrid Mamba-MoE with 256 experts, top-6 routing (see <a href="../nemotron/routing/routing_analysis.html" style="color: #38bdf8;">Nemotron routing report</a>)</li>
+            <li><strong>Qwen3.6-35B-A3B:</strong> Pure MoE with 256 experts, top-8 routing (probe not yet run)</li>
+        </ul>
+        <p style="margin-top: 0.5rem;">Muse's performance should be analyzed through throughput/latency benchmarks (Pareto reports) rather than routing probes.</p>
+    </div>
+
+    <div class="footer">
+        <p>Model: meta-models/Muse-Glimmer-30B via Dell Enterprise AI container</p>
+        <p>Architecture: Dense Transformer, bf16 precision</p>
+        <p>Note: Routing probe not applicable for dense models</p>
+        <p>Date: August 13, 2026</p>
+    </div>
+</div>
+</body>
+</html>
