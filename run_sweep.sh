@@ -105,11 +105,9 @@ for ds in "${DATASET_NAMES[@]}"; do
         --gpu-telemetry "${GPU_TELEMETRY_MODE}"
     )
 
-    # Add goodput SLOs if specified
+    # Add goodput SLOs if specified (single argument with space-separated pairs)
     if [[ -n "${GOODPUT_SLO}" ]]; then
-      for slo in ${GOODPUT_SLO}; do
-        AIPERF_ARGS+=(--goodput "${slo}")
-      done
+      AIPERF_ARGS+=(--goodput "${GOODPUT_SLO}")
     fi
 
     timeout "${RUN_TIMEOUT}" docker run --rm \
