@@ -2,7 +2,7 @@
 """
 Thinking Metrics Probe
 
-Captures thinking/reasoning metrics from streaming responses:
+Captures thinking/reasoning metrics from streaming responses using agentic datasets:
 - Thinking iterations (number of separate <think> blocks)
 - Thinking time (time from first to last thinking token)
 - Thinking tokens per iteration
@@ -10,9 +10,15 @@ Captures thinking/reasoning metrics from streaming responses:
 - Standard aiperf-compatible metrics
 
 Usage:
-    python3 thinking_metrics_probe.py [--url URL] [--port PORT] [--concurrency CONC] [--output OUTPUT]
+    # With synthetic tasks
+    python3 thinking_metrics_probe.py --url http://localhost --port 8000
 
-Requires: openai, aiohttp
+    # With agentic dataset
+    python3 thinking_metrics_probe.py --url http://localhost --port 8000 \
+        --dataset /home/bala/public/multi-turn-chat-dataset/agentic/data/multi_turn_agentic_task.jsonl \
+        --max-sessions 50
+
+Requires: aiohttp
 """
 
 import argparse
@@ -36,92 +42,122 @@ except ImportError:
 # Configuration
 # ---------------------------------------------------------------------------
 DEFAULT_MODEL = "nvidia/NVIDIA-Nemotron-3.5-Lightning-30B-A3B-NVFP4"
-CONCURRENCY_LEVELS = [1, 2, 4, 8, 16, 32, 64]
-REQUESTS_PER_LEVEL = 20
+DEFAULT_DATASET = "/home/bala/public/multi-turn-chat-dataset/agentic/data/multi_turn_agentic_task.jsonl"
+CONCURRENCY_LEVELS = [1, 2, 4, 8]
+SESSIONS_PER_LEVEL = 20
 MAX_OUTPUT_TOKENS = 512
 SYSTEM_PROMPT = "You are a helpful AI assistant. Think step by step when answering complex questions."
 
-# Agentic tasks that trigger thinking
-TASKS = [
-    {
-        "name": "code_generation",
-        "turns": [
-            "Write a Python function that finds the longest palindromic substring in a given string. Include type hints and docstring.",
-            "Now optimize it to run in O(n) time using Manacher's algorithm.",
-            "Add comprehensive unit tests covering edge cases."
-        ]
-    },
-    {
-        "name": "debugging",
-        "turns": [
-            "I have this Python code that's supposed to merge two sorted lists but it's producing wrong output:\n```python\ndef merge(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            i += 1  # Bug here\n    return result + a[i:] + b[j:]\n```\nWhat's wrong and how do I fix it?",
-            "Can you also add a version that handles duplicates correctly?"
-        ]
-    },
-    {
-        "name": "analysis",
-        "turns": [
-            "Compare the time and space complexity of quicksort vs mergesort vs timsort. Which should I use for a dataset of 1 million integers?",
-            "What about for nearly sorted data? And what about stability requirements?",
-            "Write a benchmark script to compare them empirically."
-        ]
-    },
-    {
-        "name": "architecture",
-        "turns": [
-            "I'm building a real-time chat application that needs to handle 100K concurrent users. Design the architecture including message brokering, presence, and persistence.",
-            "How would you handle message ordering guarantees and exactly-once delivery?",
-            "What database schema would you use for the message history?"
-        ]
-    },
-    {
-        "name": "math_reasoning",
-        "turns": [
-            "Prove that for any positive integer n, the sum 1 + 2 + 3 + ... + n = n(n+1)/2 using mathematical induction.",
-            "Now prove that the sum of squares 1² + 2² + ... + n² = n(n+1)(2n+1)/6.",
-            "Generalize this to find a formula for 1^k + 2^k + ... + n^k for any positive integer k."
-        ]
-    },
-    {
-        "name": "algorithm_design",
-        "turns": [
-            "Design an LRU cache that supports O(1) get and put operations. What data structures would you use?",
-            "Now extend it to support TTL (time-to-live) expiration for entries.",
-            "How would you make it thread-safe for concurrent access?"
-        ]
-    }
-]
+
+# ---------------------------------------------------------------------------
+# Data loading
+# ---------------------------------------------------------------------------
+def load_agentic_dataset(path: str, max_sessions: int = None) -> list:
+    """
+    Load agentic dataset from JSONL file.
+    Returns list of {session_id, turns: [str]} dicts.
+    """
+    sessions = []
+    with open(path) as f:
+        for i, line in enumerate(f):
+            if max_sessions and i >= max_sessions:
+                break
+            d = json.loads(line.strip())
+            session = {
+                "session_id": d["session_id"],
+                "turns": [t["text"] for t in d["turns"]]
+            }
+            sessions.append(session)
+    return sessions
 
 
+def get_synthetic_tasks() -> list:
+    """Return synthetic task definitions (fallback when no dataset provided)."""
+    tasks = [
+        {
+            "name": "code_generation",
+            "turns": [
+                "Write a Python function that finds the longest palindromic substring in a given string. Include type hints and docstring.",
+                "Now optimize it to run in O(n) time using Manacher's algorithm.",
+                "Add comprehensive unit tests covering edge cases."
+            ]
+        },
+        {
+            "name": "debugging",
+            "turns": [
+                "I have this Python code that's supposed to merge two sorted lists but it's producing wrong output:\n```python\ndef merge(a, b):\n    result = []\n    i = j = 0\n    while i < len(a) and j < len(b):\n        if a[i] <= b[j]:\n            result.append(a[i])\n            i += 1\n        else:\n            result.append(b[j])\n            i += 1  # Bug here\n    return result + a[i:] + b[j:]\n```\nWhat's wrong and how do I fix it?",
+                "Can you also add a version that handles duplicates correctly?"
+            ]
+        },
+        {
+            "name": "analysis",
+            "turns": [
+                "Compare the time and space complexity of quicksort vs mergesort vs timsort. Which should I use for a dataset of 1 million integers?",
+                "What about for nearly sorted data? And what about stability requirements?",
+                "Write a benchmark script to compare them empirically."
+            ]
+        },
+        {
+            "name": "architecture",
+            "turns": [
+                "I'm building a real-time chat application that needs to handle 100K concurrent users. Design the architecture including message brokering, presence, and persistence.",
+                "How would you handle message ordering guarantees and exactly-once delivery?",
+                "What database schema would you use for the message history?"
+            ]
+        },
+        {
+            "name": "math_reasoning",
+            "turns": [
+                "Prove that for any positive integer n, the sum 1 + 2 + 3 + ... + n = n(n+1)/2 using mathematical induction.",
+                "Now prove that the sum of squares 1² + 2² + ... + n² = n(n+1)(2n+1)/6.",
+                "Generalize this to find a formula for 1^k + 2^k + ... + n^k for any positive integer k."
+            ]
+        },
+        {
+            "name": "algorithm_design",
+            "turns": [
+                "Design an LRU cache that supports O(1) get and put operations. What data structures would you use?",
+                "Now extend it to support TTL (time-to-live) expiration for entries.",
+                "How would you make it thread-safe for concurrent access?"
+            ]
+        }
+    ]
+    return tasks
+
+
+# ---------------------------------------------------------------------------
+# Metrics dataclass
+# ---------------------------------------------------------------------------
 @dataclass
 class ThinkingMetrics:
     """Metrics for a single request's thinking behavior."""
-    task_name: str
-    turn_index: int
     session_id: str
+    turn_index: int
+    turn_count: int
+    task_name: str  # "agentic" for real dataset, or synthetic task name
     
     # Thinking block analysis
-    thinking_iterations: int = 0  # Number of separate <think> blocks
-    thinking_tokens: int = 0  # Total tokens in thinking blocks
-    thinking_chars: int = 0  # Total characters in thinking blocks
-    output_tokens: int = 0  # Tokens outside thinking blocks
-    output_chars: int = 0  # Characters outside thinking blocks
-    total_chars: int = 0  # Total response characters
+    thinking_iterations: int = 0
+    thinking_tokens: int = 0
+    thinking_chars: int = 0
+    output_tokens: int = 0
+    output_chars: int = 0
+    total_chars: int = 0
     
     # Timing
     latency_s: float = 0
-    thinking_time_s: float = 0  # Time from first to last thinking token
-    output_time_s: float = 0  # Time from first output token to end
-    ttft_s: float = 0  # Time to first token
+    thinking_time_s: float = 0
+    output_time_s: float = 0
+    ttft_s: float = 0
     
     # Per-iteration stats
     thinking_tokens_per_iteration: List[int] = field(default_factory=list)
     thinking_chars_per_iteration: List[int] = field(default_factory=list)
     
     # Computed ratios
-    thinking_overhead_ratio: float = 0  # thinking_time / total_time
-    thinking_token_ratio: float = 0  # thinking_tokens / total_tokens
-    thinking_char_ratio: float = 0  # thinking_chars / total_chars
+    thinking_overhead_ratio: float = 0
+    thinking_token_ratio: float = 0
+    thinking_char_ratio: float = 0
     
     # Success
     success: bool = True
@@ -133,41 +169,26 @@ def estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
-def parse_thinking_blocks(response_text: str) -> List[dict]:
-    """
-    Parse <think> blocks from response text.
-    Returns list of {start, end, content, token_estimate} dicts.
-    """
-    blocks = []
-    # Match <think>...</think> patterns (including multiline)
-    pattern = r'<think>(.*?)</think>'
-    for match in re.finditer(pattern, response_text, re.DOTALL):
-        content = match.group(1).strip()
-        blocks.append({
-            "start": match.start(),
-            "end": match.end(),
-            "content": content,
-            "token_estimate": estimate_tokens(content),
-            "char_estimate": len(content),
-        })
-    return blocks
-
-
+# ---------------------------------------------------------------------------
+# Streaming request with thinking capture
+# ---------------------------------------------------------------------------
 async def send_streaming_request(
     session: aiohttp.ClientSession,
     base_url: str,
     model: str,
     messages: list,
     max_tokens: int,
-    task_name: str,
-    turn_index: int,
     session_id: str,
+    turn_index: int,
+    turn_count: int,
+    task_name: str,
 ) -> ThinkingMetrics:
     """Send a streaming request and capture thinking metrics."""
     metrics = ThinkingMetrics(
-        task_name=task_name,
-        turn_index=turn_index,
         session_id=session_id,
+        turn_index=turn_index,
+        turn_count=turn_count,
+        task_name=task_name,
     )
     
     url = f"{base_url}/chat/completions"
@@ -180,8 +201,8 @@ async def send_streaming_request(
     }
     
     # Track reasoning and content separately
-    reasoning_chunks = []  # list of (text, timestamp)
-    content_chunks = []    # list of (text, timestamp)
+    reasoning_chunks = []
+    content_chunks = []
     first_reasoning_time = None
     last_reasoning_time = None
     first_content_time = None
@@ -274,11 +295,14 @@ async def send_streaming_request(
     return metrics
 
 
+# ---------------------------------------------------------------------------
+# Concurrency test runner
+# ---------------------------------------------------------------------------
 async def run_concurrency_test(
     base_url: str,
     model: str,
     concurrency: int,
-    requests_per_task: int,
+    tasks: list,
     max_output_tokens: int,
 ) -> dict:
     """Run a concurrency test and collect thinking metrics."""
@@ -289,22 +313,26 @@ async def run_concurrency_test(
     
     async with aiohttp.ClientSession(connector=connector) as session:
         # Create tasks for all requests
-        tasks = []
-        for req_idx in range(requests_per_task):
-            for task in TASKS:
-                session_id = f"c{concurrency}_req{req_idx}_{task['name']}"
-                messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        request_tasks = []
+        for task in tasks:
+            session_id = task.get("session_id", task.get("name", "unknown"))
+            turns = task["turns"]
+            
+            # Build conversation incrementally (each turn includes previous context)
+            messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+            
+            for turn_idx, turn_text in enumerate(turns):
+                messages.append({"role": "user", "content": turn_text})
+                task_name = task.get("name", "agentic")
                 
-                for turn_idx, turn_text in enumerate(task["turns"]):
-                    messages.append({"role": "user", "content": turn_text})
-                    tasks.append(send_streaming_request(
-                        session, base_url, model, messages, max_output_tokens,
-                        task["name"], turn_idx, session_id
-                    ))
+                request_tasks.append(send_streaming_request(
+                    session, base_url, model, messages.copy(), max_output_tokens,
+                    session_id, turn_idx, len(turns), task_name
+                ))
         
         # Run all requests concurrently
-        print(f"  Running {len(tasks)} requests...")
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        print(f"  Running {len(request_tasks)} requests from {len(tasks)} sessions...")
+        results = await asyncio.gather(*request_tasks, return_exceptions=True)
         
         for r in results:
             if isinstance(r, ThinkingMetrics):
@@ -317,9 +345,8 @@ async def run_concurrency_test(
     failed = [m for m in all_metrics if not m.success]
     
     if failed:
-        # Print first few errors for debugging
         for m in failed[:3]:
-            print(f"  Failed: {m.task_name} turn {m.turn_index}: {m.error}")
+            print(f"  Failed: {m.session_id[:8]}... turn {m.turn_index}: {m.error}")
     
     if not successful:
         return {"error": "All requests failed"}
@@ -354,9 +381,10 @@ async def run_concurrency_test(
         "throughput_req_s": len(successful) / sum(m.latency_s for m in successful) * concurrency,
         "throughput_tok_s": sum(m.output_tokens for m in successful) / sum(m.latency_s for m in successful) * concurrency,
         
-        # Per-task breakdown
+        # Breakdowns
         "by_task": {},
         "by_turn": {},
+        "by_turn_count": {},
         
         # Per-request details
         "individual_metrics": [asdict(m) for m in successful],
@@ -376,7 +404,7 @@ async def run_concurrency_test(
             "latency_avg_s": sum(m.latency_s for m in task_metrics) / len(task_metrics),
         }
     
-    # Breakdown by turn
+    # Breakdown by turn index
     by_turn = defaultdict(list)
     for m in successful:
         by_turn[m.turn_index].append(m)
@@ -390,6 +418,21 @@ async def run_concurrency_test(
             "latency_avg_s": sum(m.latency_s for m in turn_metrics) / len(turn_metrics),
         }
     
+    # Breakdown by session turn count (1, 2, 3, ... 14)
+    by_turn_count = defaultdict(list)
+    for m in successful:
+        by_turn_count[m.turn_count].append(m)
+    
+    for tc, tc_metrics in sorted(by_turn_count.items()):
+        agg["by_turn_count"][str(tc)] = {
+            "count": len(tc_metrics),
+            "sessions": len(set(m.session_id for m in tc_metrics)),
+            "thinking_iterations_avg": sum(m.thinking_iterations for m in tc_metrics) / len(tc_metrics),
+            "thinking_tokens_avg": sum(m.thinking_tokens for m in tc_metrics) / len(tc_metrics),
+            "thinking_overhead_ratio_avg": sum(m.thinking_overhead_ratio for m in tc_metrics) / len(tc_metrics),
+            "latency_avg_s": sum(m.latency_s for m in tc_metrics) / len(tc_metrics),
+        }
+    
     # Print summary
     print(f"  Success: {len(successful)}/{len(all_metrics)} ({agg['success_rate']:.0f}%)")
     print(f"  Throughput: {agg['throughput_req_s']:.1f} req/s, {agg['throughput_tok_s']:.0f} tok/s")
@@ -401,13 +444,18 @@ async def run_concurrency_test(
     return agg
 
 
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 async def main():
     parser = argparse.ArgumentParser(description="Thinking Metrics Probe")
     parser.add_argument("--url", default="http://localhost")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--concurrency", type=int, nargs="+", default=CONCURRENCY_LEVELS)
-    parser.add_argument("--requests", type=int, default=REQUESTS_PER_LEVEL)
+    parser.add_argument("--dataset", default=None, help="Path to agentic dataset JSONL")
+    parser.add_argument("--max-sessions", type=int, default=SESSIONS_PER_LEVEL,
+                        help="Max sessions per concurrency level")
     parser.add_argument("--output-tokens", type=int, default=MAX_OUTPUT_TOKENS)
     parser.add_argument("--output", default=None)
     args = parser.parse_args()
@@ -416,7 +464,21 @@ async def main():
     print(f"Connecting to: {base_url}")
     print(f"Model: {args.model}")
     print(f"Concurrency levels: {args.concurrency}")
-    print(f"Requests per level: {args.requests}")
+    
+    # Load dataset
+    if args.dataset:
+        print(f"Dataset: {args.dataset}")
+        print(f"Max sessions per level: {args.max_sessions}")
+        all_sessions = load_agentic_dataset(args.dataset, max_sessions=None)
+        print(f"Total sessions loaded: {len(all_sessions)}")
+        
+        # Get turn count distribution
+        turn_counts = [len(s["turns"]) for s in all_sessions]
+        print(f"Turn count distribution: {dict(sorted((tc, turn_counts.count(tc)) for tc in set(turn_counts)))}")
+    else:
+        print("Dataset: synthetic (no --dataset specified)")
+        all_sessions = get_synthetic_tasks()
+    
     print(f"Max output tokens: {args.output_tokens}")
     
     # Health check
@@ -431,18 +493,28 @@ async def main():
         "config": {
             "model": args.model,
             "url": base_url,
+            "dataset": args.dataset,
             "concurrency_levels": args.concurrency,
-            "requests_per_level": args.requests,
+            "max_sessions_per_level": args.max_sessions,
             "max_output_tokens": args.output_tokens,
-            "tasks": [t["name"] for t in TASKS],
+            "total_sessions": len(all_sessions),
             "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         },
         "runs": []
     }
     
     for conc in args.concurrency:
+        # Sample sessions for this concurrency level
+        if args.dataset:
+            # Use different random sample for each level
+            import random
+            random.seed(42 + conc)  # Reproducible but different per level
+            sessions = random.sample(all_sessions, min(args.max_sessions, len(all_sessions)))
+        else:
+            sessions = all_sessions
+        
         result = await run_concurrency_test(
-            base_url, args.model, conc, args.requests, args.output_tokens
+            base_url, args.model, conc, sessions, args.output_tokens
         )
         all_results["runs"].append(result)
         await asyncio.sleep(2)  # Cool down
@@ -450,7 +522,7 @@ async def main():
     # Save
     output_path = args.output or os.path.join(
         os.path.dirname(__file__), "results", "final", "nemotron",
-        "mamba_experiments", "thinking_metrics.json"
+        "mamba_experiments", "thinking_metrics_agentic.json"
     )
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
@@ -458,11 +530,11 @@ async def main():
     print(f"\nResults saved: {output_path}")
     
     # Print summary table
-    print("\n" + "=" * 90)
+    print("\n" + "=" * 100)
     print("THINKING METRICS SUMMARY")
-    print("=" * 90)
+    print("=" * 100)
     print(f"{'Conc':>5} {'Req/s':>7} {'Tok/s':>7} {'Lat(s)':>7} {'Think#':>6} {'ThinkT':>6} {'Over%':>6} {'TokRat':>6}")
-    print("-" * 90)
+    print("-" * 100)
     for r in all_results["runs"]:
         if "error" not in r:
             print(f"{r['concurrency']:>5} {r['throughput_req_s']:>7.1f} {r['throughput_tok_s']:>7.0f} "
