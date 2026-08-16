@@ -252,8 +252,10 @@ async def send_streaming_request(
     
     except Exception as e:
         metrics.success = False
-        metrics.error = str(e)[:200]
+        metrics.error = f"{type(e).__name__}: {str(e)[:200]}"
         metrics.latency_s = time.perf_counter() - t_start
+        # Print error for debugging
+        print(f"  Error: {session_id[:8]}... turn {turn_index}: {metrics.error}")
         return metrics
     
     t_end = time.perf_counter()
@@ -310,8 +312,9 @@ async def run_concurrency_test(
     
     all_metrics = []
     connector = aiohttp.TCPConnector(limit=concurrency)
+    timeout = aiohttp.ClientTimeout(total=900)  # 15 minute timeout per request
     
-    async with aiohttp.ClientSession(connector=connector) as session:
+    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
         # Create tasks for all requests
         request_tasks = []
         for task in tasks:

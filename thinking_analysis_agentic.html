@@ -79,13 +79,13 @@ code { font-family: 'SF Mono', 'Cascadia Code', monospace; }
 </div>
 <div class="metric-card">
 <div class="label">Success Rate</div>
-<div class="value" style="color: var(--green);">29-93%</div>
-<div class="sub">varies by concurrency level</div>
+<div class="value" style="color: var(--green);">85-100%</div>
+<div class="sub">85% at c1, 100% at c2+</div>
 </div>
 <div class="metric-card">
 <div class="label">Avg Latency</div>
-<div class="value" style="color: var(--accent);">148-158s</div>
-<div class="sub">across all concurrency levels</div>
+<div class="value" style="color: var(--accent);">177-454s</div>
+<div class="sub">decreases with concurrency</div>
 </div>
 <div class="metric-card">
 <div class="label">Throughput</div>
@@ -137,14 +137,14 @@ code { font-family: 'SF Mono', 'Cascadia Code', monospace; }
 
 <table>
 <tr><th>Conc</th><th>Success</th><th>Latency (s)</th><th>Thinking Iters</th><th>Thinking Tokens</th><th>Overhead %</th><th>Token Ratio</th></tr>
-<tr><td>1</td><td><span class="tag orange">54/186 (29%)</span></td><td>147.76</td><td>17.4</td><td>548</td><td><span class="tag green">7.2%</span></td><td>98.9%</td></tr>
-<tr><td>2</td><td><span class="tag orange">78/162 (48%)</span></td><td>150.12</td><td>16.2</td><td>541</td><td><span class="tag orange">10.6%</span></td><td>98.2%</td></tr>
-<tr><td>4</td><td><span class="tag orange">113/175 (65%)</span></td><td>155.94</td><td>18.3</td><td>548</td><td><span class="tag orange">13.6%</span></td><td>99.1%</td></tr>
-<tr><td>8</td><td><span class="tag green">164/177 (93%)</span></td><td>158.41</td><td>19.1</td><td>551</td><td><span class="tag red">17.0%</span></td><td>98.3%</td></tr>
+<tr><td>1</td><td><span class="tag orange">159/186 (85%)</span></td><td>454.10</td><td>18.9</td><td>550</td><td><span class="tag green">3.3%</span></td><td>98.0%</td></tr>
+<tr><td>2</td><td><span class="tag green">162/162 (100%)</span></td><td>311.29</td><td>18.9</td><td>551</td><td><span class="tag orange">5.9%</span></td><td>98.2%</td></tr>
+<tr><td>4</td><td><span class="tag green">175/175 (100%)</span></td><td>238.06</td><td>18.6</td><td>548</td><td><span class="tag orange">9.8%</span></td><td>98.6%</td></tr>
+<tr><td>8</td><td><span class="tag green">177/177 (100%)</span></td><td>177.28</td><td>19.4</td><td>550</td><td><span class="tag red">16.1%</span></td><td>98.3%</td></tr>
 </table>
 
 <div class="insight">
-<strong>Pattern:</strong> Success rate improves dramatically with concurrency (29% → 93%) because the scheduler can better manage long-running requests. Latency stays relatively stable (148-158s) because the model processes requests in batches. Thinking overhead increases (7% → 17%) as more requests compete for GPU compute.
+<strong>Pattern:</strong> Success rate improves with concurrency (85% at c1 → 100% at c2+) because the scheduler can better manage long-running requests. Latency decreases dramatically (454s → 177s) as batch processing improves GPU utilization. Thinking overhead increases (3% → 16%) as more requests compete for GPU compute.
 </div>
 
 <h2>4. Thinking by Session Length</h2>
