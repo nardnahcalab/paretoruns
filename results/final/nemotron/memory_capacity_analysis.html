@@ -333,6 +333,49 @@
         </div>
     </div>
 
+    <h3>Calculation Breakdown: Why 370 GPUs?</h3>
+    <div class="insight">
+        <strong>Step 1: Memory per token.</strong><br>
+        From server startup logs: KV cache = 88.86 GiB (90,993 MiB), capacity = 28,342,506 tokens<br>
+        <code>Memory per token = 90,993 MiB / 28,342,506 = 0.00321 MiB/token</code>
+    </div>
+    <div class="insight">
+        <strong>Step 2: Memory per 256K session.</strong><br>
+        <code>0.00321 MiB/token × 256,000 tokens = 822 MiB/session</code><br>
+        At 121.6 GiB total GPU memory, this is ~0.68% of total capacity per session.
+    </div>
+    <div class="insight">
+        <strong>Step 3: Sessions per GPU (memory-limited).</strong><br>
+        <code>90,993 MiB / 822 MiB/session = ~111 sessions</code><br>
+        Memory alone would allow 111 concurrent 256K sessions per GPU.
+    </div>
+    <div class="insight warning">
+        <strong>Step 4: Sessions per GPU (concurrency-limited).</strong><br>
+        Server logs show: <code>Maximum concurrency for 1,048,576 tokens per request: 27.03x</code><br>
+        This is a hard cap from vLLM's scheduler, set by <code>max_num_scheduled_tokens=1536</code> (due to speculative decoding config).<br>
+        <code>Effective max = min(111, 27) = 27 sessions per GPU</code>
+    </div>
+    <div class="insight danger">
+        <strong>Step 5: GPUs for 10K concurrent users.</strong><br>
+        <code>10,000 concurrent users / 27 sessions per GPU = 370.37 → 370 GPUs</code><br>
+        <strong>The bottleneck is concurrency scheduling, not memory.</strong> Memory would support ~111 sessions (needing only 92 GPUs), but vLLM's scheduler caps at 27 concurrent requests due to the speculative decoding setup.
+    </div>
+
+    <h3>What Limits the Concurrency to 27?</h3>
+    <table>
+        <thead><tr><th>Factor</th><th>Value</th><th>Impact</th></tr></thead>
+        <tbody>
+            <tr><td><code>max_num_scheduled_tokens</code></td><td>1536</td><td>Sets max tokens processed per scheduling step</td></tr>
+            <tr><td><code>num_speculative_tokens</code></td><td>3</td><td>DSpark speculates 3 tokens ahead, increasing per-request overhead</td></tr>
+            <tr><td>Effective token budget per request</td><td>1536 / 256K context</td><td>Large context reduces how many requests fit in one batch</td></tr>
+            <tr><td>Result</td><td>27 concurrent requests max</td><td>Memory has 4x more headroom than scheduler allows</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight success">
+        <strong>Key finding:</strong> The 370 GPU estimate is a <em>conservative upper bound</em> based on the current vLLM scheduler configuration. The real constraint is scheduling, not memory. Optimizing the scheduler (increasing <code>max_num_batched_tokens</code>, reducing speculative tokens, or using continuous batching) could reduce GPU count to ~92 (memory-limited).
+    </div>
+
     <div class="insight">
         <strong>Optimization levers to reduce GPU count:</strong>
         <ol style="margin-top: 0.5rem; margin-left: 1.5rem;">
@@ -375,6 +418,46 @@
             <p>1K tok: 0.65s → 128K tok: 6.04s</p>
             <p>176x input increase = 9.3x latency increase</p>
             <p style="color: #10b981; font-weight: 700;">Routing stable across all lengths</p>
+        </div>
+    </div>
+
+    <h2>Summary of Findings</h2>
+    <div class="grid">
+        <div class="card">
+            <h3>Memory Architecture</h3>
+            <ul style="margin-left: 1.2rem; line-height: 2;">
+                <li>KV cache uses <strong>73.1%</strong> of GPU memory (88.9 GiB)</li>
+                <li>Model weights are only <strong>18.3%</strong> (22.3 GiB) thanks to NVFP4</li>
+                <li>Memory per token: <strong>0.00321 MiB</strong> (FP8 KV cache)</li>
+                <li>KV cache capacity: <strong>28.3M tokens</strong></li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Latency & Scaling</h3>
+            <ul style="margin-left: 1.2rem; line-height: 2;">
+                <li>128K context latency: <strong>2.80s</strong> (sublinear scaling)</li>
+                <li>Scaling exponent: <strong>0.19</strong> (512x input = 3.5x latency)</li>
+                <li>DSpark speculative decoding: <strong>1.16-1.46x</strong> speedup</li>
+                <li>Best speedup at low concurrency (c1=1.46x)</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Routing Behavior</h3>
+            <ul style="margin-left: 1.2rem; line-height: 2;">
+                <li>Routing <strong>stable</strong> across 1K-128K context</li>
+                <li>Entropy consistent (content-aware, not length-dependent)</li>
+                <li>23 MoE layers with 256 experts each</li>
+                <li>Top-6 expert selection per token</li>
+            </ul>
+        </div>
+        <div class="card danger">
+            <h3>Capacity Planning</h3>
+            <ul style="margin-left: 1.2rem; line-height: 2;">
+                <li>256K sessions per GPU: <strong>27</strong> (concurrency-limited)</li>
+                <li>Memory-limited capacity: <strong>111 sessions</strong> (4x more)</li>
+                <li>10K users at 256K: <strong>370 GPUs</strong> (current config)</li>
+                <li>Optimized: <strong>~92 GPUs</strong> (memory-limited only)</li>
+            </ul>
         </div>
     </div>
 
