@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Routing Probe Analysis — Presentation</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; overflow: hidden; height: 100vh; }
+
+        /* Slide container */
+        .slide { display: none; width: 100vw; height: 100vh; padding: 3rem 4rem; overflow-y: auto; }
+        .slide.active { display: flex; flex-direction: column; }
+
+        /* Navigation */
+        .nav { position: fixed; bottom: 0; left: 0; right: 0; background: #1e293b; border-top: 1px solid #334155; padding: 0.75rem 2rem; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
+        .nav-btn { background: #334155; color: #e2e8f0; border: none; padding: 0.5rem 1.5rem; border-radius: 8px; cursor: pointer; font-size: 0.9rem; transition: background 0.2s; }
+        .nav-btn:hover { background: #475569; }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .nav-counter { color: #94a3b8; font-size: 0.85rem; }
+        .progress { position: fixed; top: 0; left: 0; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); transition: width 0.3s; z-index: 100; }
+
+        /* Slide styles */
+        .slide h1 { font-size: 2.5rem; color: #38bdf8; margin-bottom: 0.5rem; }
+        .slide h2 { font-size: 1.8rem; color: #7dd3fc; margin: 1.5rem 0 1rem; }
+        .slide h3 { font-size: 1.2rem; color: #93c5fd; margin: 1.2rem 0 0.6rem; }
+        .subtitle { color: #94a3b8; font-size: 1.1rem; margin-bottom: 1.5rem; }
+        .small { font-size: 0.85rem; color: #94a3b8; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.2rem; margin: 1rem 0; }
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.2rem; }
+
+        .card { background: #1e293b; border-radius: 12px; padding: 1.2rem; border: 1px solid #334155; }
+        .card.highlight { border-color: #38bdf8; }
+        .card.green { border-color: #10b981; }
+        .card.red { border-color: #ef4444; }
+        .card.yellow { border-color: #f59e0b; }
+
+        .metric { font-size: 2.8rem; font-weight: 700; color: #38bdf8; }
+        .metric.sm { font-size: 2rem; }
+        .metric.green { color: #10b981; }
+        .metric.red { color: #ef4444; }
+        .metric.yellow { color: #fcd34d; }
+        .metric.purple { color: #a78bfa; }
+        .metric.pink { color: #ec4899; }
+        .metric-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; }
+        .metric-sub { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+
+        table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.9rem; }
+        th, td { padding: 0.6rem 0.8rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #1e293b; color: #93c5fd; font-weight: 600; }
+
+        .insight { background: #1e293b; border-left: 4px solid #38bdf8; padding: 0.8rem 1.2rem; margin: 0.75rem 0; border-radius: 0 8px 8px 0; font-size: 0.9rem; }
+        .insight strong { color: #38bdf8; }
+        .insight.danger { border-left-color: #ef4444; }
+        .insight.danger strong { color: #fca5a5; }
+        .insight.warning { border-left-color: #f59e0b; }
+        .insight.warning strong { color: #fcd34d; }
+        .insight.success { border-left-color: #10b981; }
+        .insight.success strong { color: #6ee7b7; }
+        .insight ul, .insight ol { margin-top: 0.4rem; margin-left: 1.2rem; }
+        .insight li { margin-bottom: 0.3rem; }
+
+        .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+        .tag-text { background: #4c1d95; color: #c4b5fd; }
+        .tag-random { background: #78350f; color: #fcd34d; }
+        .tag-reasoning { background: #831843; color: #f9a8d4; }
+        .tag-hi { background: #065f46; color: #6ee7b7; }
+        .tag-moe { background: #1e3a5f; color: #7dd3fc; }
+        .tag-nvfp4 { background: #be185d; color: #fbcfe8; }
+
+        code { background: #1e293b; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.85rem; color: #f472b6; }
+
+        .diagram { background: #0f172a; border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; margin: 0.75rem 0; }
+        .flow-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.5rem 0; flex-wrap: wrap; justify-content: center; }
+        .flow-box { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 0.5rem 0.8rem; font-size: 0.8rem; text-align: center; }
+        .flow-box.active { border-color: #38bdf8; background: #1e3a5f; }
+        .flow-box.hot { border-color: #ef4444; background: #450a0a; }
+        .flow-box.cold { border-color: #475569; opacity: 0.5; }
+        .flow-arrow { color: #64748b; font-size: 1rem; }
+
+        .glossary dt { font-weight: 600; color: #93c5fd; margin-top: 0.6rem; font-size: 0.95rem; }
+        .glossary dd { margin-left: 1.2rem; color: #cbd5e1; font-size: 0.9rem; }
+
+        .formula { background: #0f172a; padding: 0.6rem 1rem; border-radius: 8px; font-family: 'Courier New', monospace; color: #7dd3fc; margin: 0.5rem 0; font-size: 0.95rem; text-align: center; }
+
+        .bar-chart { margin: 0.5rem 0; }
+        .bar-row { display: flex; align-items: center; margin: 0.3rem 0; }
+        .bar-label { width: 90px; font-size: 0.8rem; color: #94a3b8; text-align: right; padding-right: 8px; }
+        .bar-container { flex: 1; height: 22px; background: #0f172a; border-radius: 4px; overflow: hidden; }
+        .bar { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 6px; font-size: 0.7rem; font-weight: 600; }
+
+        .heatmap-row { display: flex; gap: 2px; align-items: center; margin: 2px 0; }
+        .heatmap-label { width: 80px; font-size: 0.7rem; color: #94a3b8; text-align: right; padding-right: 6px; }
+
+        .metric-ref { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 1rem; margin: 0.5rem 0; }
+        .metric-ref h4 { color: #38bdf8; margin-bottom: 0.3rem; font-size: 0.95rem; }
+        .metric-ref .formula { font-size: 0.85rem; }
+        .interpretation { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.5rem; }
+        .interp-item { background: #0f172a; padding: 0.4rem; border-radius: 6px; text-align: center; }
+        .interp-item .val { font-size: 1rem; font-weight: 700; }
+        .interp-item .lbl { font-size: 0.65rem; color: #94a3b8; }
+
+        .entropy-bar { display: inline-block; width: 10px; margin: 0 1px; background: linear-gradient(180deg, #38bdf8, #0284c7); border-radius: 2px 2px 0 0; vertical-align: bottom; }
+
+        /* Slide-specific: question marks */
+        .q-list { list-style: none; counter-reset: q; }
+        .q-list li { counter-increment: q; padding: 0.8rem 0; border-bottom: 1px solid #334155; font-size: 1.05rem; }
+        .q-list li::before { content: "Q" counter(q); display: inline-block; width: 36px; height: 36px; line-height: 36px; text-align: center; background: #1e3a5f; color: #38bdf8; border-radius: 50%; font-weight: 700; font-size: 0.85rem; margin-right: 0.8rem; }
+
+        .summary-box { background: linear-gradient(135deg, #1e3a5f, #1e293b); border: 2px solid #38bdf8; border-radius: 12px; padding: 1.5rem; margin: 1rem 0; }
+        .summary-box h3 { color: #38bdf8; margin-bottom: 0.8rem; }
+
+        @media (max-width: 900px) {
+            .slide { padding: 1.5rem; }
+            .two-col, .three-col { grid-template-columns: 1fr; }
+            .slide h1 { font-size: 1.8rem; }
+            .slide h2 { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<!-- ==================== SLIDE 1: Questions ==================== -->
+<div class="slide active" id="slide-1">
+    <h1>MoE Routing Probe Analysis</h1>
+    <p class="subtitle">Qwen3.6-35B-A3B NVFP4 on NVIDIA GB10 &mdash; How does the router distribute tokens across 256 experts?</p>
+
+    <h2>Questions We Want to Answer</h2>
+    <ol class="q-list">
+        <li><strong>How evenly does the router distribute tokens across experts?</strong> &mdash; Is load balanced, or do hot experts emerge?</li>
+        <li><strong>Does input content change routing behavior?</strong> &mdash; Do text, random, reasoning, and repetitive inputs use different experts?</li>
+        <li><strong>How does vocabulary diversity affect routing?</strong> &mdash; What happens when all words are replaced with "hi"?</li>
+        <li><strong>Does routing change across layers?</strong> &mdash; Do early vs deep layers route differently?</li>
+        <li><strong>Does routing change with sequence position?</strong> &mdash; Early vs mid vs late tokens in a sequence?</li>
+        <li><strong>What are the implications for multi-GPU Expert Parallelism?</strong> &mdash; How does load imbalance affect GB10 vs XE9780 with 8&times;B300?</li>
+    </ol>
+
+    <div class="insight" style="margin-top: 1.5rem;">
+        <strong>Why these questions matter:</strong> Mixture-of-Experts models only activate a fraction of parameters per token. Understanding routing is critical for infrastructure planning, load balancing, and cost optimization at scale.
+    </div>
+</div>
+
+<!-- ==================== SLIDE 2: Dataset Design ==================== -->
+<div class="slide" id="slide-2">
+    <h1>Dataset Design</h1>
+    <p class="subtitle">Four datasets engineered to isolate specific routing variables</p>
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="card">
+            <h3><span class="tag tag-text">TEXT</span> &mdash; Natural Language Baseline</h3>
+            <p class="small">500 sessions &middot; 134 unique words &middot; 1-10 turn depth</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #cbd5e1;">"How can I improve my sleep quality?"</p>
+            <p class="small" style="margin-top: 0.3rem;">Represents real-world conversational routing</p>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-random">RANDOM</span> &mdash; No Semantic Structure</h3>
+            <p class="small">200 sessions &middot; ~10K+ random tokens &middot; 1-6 turn depth</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #fcd34d;">"view evidence ocean data parent network"</p>
+            <p class="small" style="margin-top: 0.3rem;">Control: tests routing without meaning</p>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-reasoning">REASONING</span> &mdash; Chain-of-Thought</h3>
+            <p class="small">200 sessions &middot; ~200+ reasoning tokens &middot; 1-6 turn depth</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #f9a8d4;">"Explain why correlation does not imply causation"</p>
+            <p class="small" style="margin-top: 0.3rem;">Tests whether logic changes routing</p>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-hi">HI-REPEATED</span> &mdash; Zero Vocabulary Diversity</h3>
+            <p class="small">500 sessions &middot; <strong style="color: #6ee7b7;">1 unique word</strong> &middot; 1-10 turn depth</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6ee7b7;">"hi hi hi hi hi hi hi hi hi hi"</p>
+            <p class="small" style="margin-top: 0.3rem;">Isolates vocabulary diversity as a variable</p>
+        </div>
+    </div>
+
+    <div class="insight" style="margin-top: 1rem;">
+        <strong>Key insight:</strong> Text and hi-repeated have identical structure (500 sessions, same turn distribution). Only word content differs. This 134x vocabulary difference drives a <strong>30.9% entropy reduction</strong> in routing.
+    </div>
+
+    <h3 style="margin-top: 1rem;">Token Count Comparison</h3>
+    <table>
+        <thead><tr><th>Dataset</th><th>Sessions</th><th>Single-turn Tokens</th><th>Multi-turn Tokens</th><th>Vocabulary Size</th></tr></thead>
+        <tbody>
+            <tr><td><span class="tag tag-text">TEXT</span></td><td>500</td><td>514</td><td>36,351</td><td>134</td></tr>
+            <tr><td><span class="tag tag-random">RANDOM</span></td><td>200</td><td>433</td><td>35,287</td><td>~10,000+</td></tr>
+            <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>200</td><td>406</td><td>36,414</td><td>~200+</td></tr>
+            <tr><td><span class="tag tag-hi">HI-REPEATED</span></td><td>500</td><td>482</td><td>3,591</td><td><strong style="color: #6ee7b7;">1</strong></td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- ==================== SLIDE 3: Test Environment ==================== -->
+<div class="slide" id="slide-3">
+    <h1>Test Environment</h1>
+    <p class="subtitle">Hardware, software, and probe design for reproducibility</p>
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+        <div class="card highlight">
+            <h3>Hardware</h3>
+            <p style="font-size: 0.9rem; color: #cbd5e1;"><strong>Dell Pro Max</strong></p>
+            <p class="small">NVIDIA GB10 (DGX Spark, SM121)</p>
+            <p class="small">128 GB unified LPDDR5X</p>
+            <p class="small">273 GB/s bandwidth</p>
+            <p class="small">Single GPU, no NVLink</p>
+        </div>
+        <div class="card">
+            <h3>Software Stack</h3>
+            <p style="font-size: 0.9rem; color: #cbd5e1;"><strong>vLLM 0.24.0</strong></p>
+            <p class="small">Docker: <code>vllm/vllm-openai:v0.24.0</code></p>
+            <p class="small">FP8 KV cache</p>
+            <p class="small">Prefix caching enabled</p>
+            <p class="small">Eager execution</p>
+        </div>
+        <div class="card">
+            <h3>Model</h3>
+            <p style="font-size: 0.9rem; color: #cbd5e1;"><code>Qwen3.6-35B-A3B-NVFP4</code></p>
+            <p class="small">35B total / 3B active</p>
+            <p class="small">256 experts, top-8 routing</p>
+            <p class="small">40 MoE layers</p>
+            <p class="small">NVFP4 (4-bit) quantization</p>
+        </div>
+        <div class="card">
+            <h3>Test Date</h3>
+            <p style="font-size: 0.9rem; color: #cbd5e1;"><strong>August 13, 2026</strong></p>
+            <p class="small">Single-turn: 05:06 UTC</p>
+            <p class="small">Multi-turn: 05:13 UTC</p>
+            <p class="small">GPU memory util: 50-80%</p>
+        </div>
+    </div>
+
+    <h3 style="margin-top: 1rem;">Probe Design</h3>
+    <div class="two-col">
+        <div class="card">
+            <h3>Single-Turn Probe (<code>router_probe.py</code>)</h3>
+            <table>
+                <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+                <tbody>
+                    <tr><td>Sessions/dataset</td><td>20</td></tr>
+                    <tr><td>Max decode tokens</td><td>8</td></tr>
+                    <tr><td>Max sequence length</td><td>512</td></tr>
+                    <tr><td>Output</td><td>Per-layer entropy, expert histograms, top-expert share</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="card">
+            <h3>Multi-Turn Probe (<code>router_probe_multiturn.py</code>)</h3>
+            <table>
+                <thead><tr><th>Parameter</th><th>Value</th></tr></thead>
+                <tbody>
+                    <tr><td>Sessions/dataset</td><td>200</td></tr>
+                    <tr><td>Max output tokens</td><td>64</td></tr>
+                    <tr><td>Max sequence length</td><td>4,096</td></tr>
+                    <tr><td>Output</td><td>Position-based entropy, Jaccard overlap, cosine similarity</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="insight" style="margin-top: 1rem;">
+        <strong>How routing data is captured:</strong> vLLM's <code>enable_return_routed_experts</code> flag returns the exact top-8 expert IDs selected by the fused MoE kernels. This is the actual routing computation, not an approximation.
+    </div>
+</div>
+
+<!-- ==================== SLIDE 4: GPU Memory Architecture ==================== -->
+<div class="slide" id="slide-4">
+    <h1>GPU Memory Architecture</h1>
+    <p class="subtitle">HBM, SRAM, and bandwidth &mdash; how each affects MoE inference</p>
+
+    <div class="diagram">
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin: 1rem 0;">
+            <div style="text-align: center; min-width: 220px;">
+                <div style="background: #065f46; border: 2px solid #10b981; border-radius: 12px; padding: 1.2rem; min-height: 200px;">
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #10b981;">SRAM (On-Chip)</div>
+                    <div style="font-size: 0.75rem; color: #6ee7b7; margin-top: 0.25rem;">~256 KB per SM &times; 160 SMs = ~40 MB</div>
+                    <div style="background: #0f172a; border-radius: 6px; padding: 0.5rem; margin-top: 0.75rem; font-size: 0.8rem; color: #cbd5e1; text-align: left;">
+                        <div style="font-weight: 600; color: #10b981;">Stores:</div>
+                        <div>&bull; Current expert's weights</div>
+                        <div>&bull; Token activations</div>
+                        <div>&bull; Register file</div>
+                    </div>
+                    <div style="background: #0f172a; border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.8rem; color: #cbd5e1;">
+                        <div style="font-weight: 600; color: #10b981;">Bandwidth:</div>
+                        <div style="font-size: 1.2rem; font-weight: 700; color: #10b981;">19+ TB/s</div>
+                    </div>
+                </div>
+                <div style="color: #6ee7b7; font-size: 0.8rem; margin-top: 0.5rem;"><strong>WHERE COMPUTE HAPPENS</strong></div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 60px;">
+                <div style="color: #64748b; font-size: 0.7rem;">Load weights</div>
+                <div style="font-size: 2rem; color: #f59e0b;">&hArr;</div>
+                <div style="color: #64748b; font-size: 0.7rem;">8 TB/s (B300)</div>
+            </div>
+
+            <div style="text-align: center; min-width: 220px;">
+                <div style="background: #1e1b4b; border: 2px solid #818cf8; border-radius: 12px; padding: 1.2rem; min-height: 200px;">
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #818cf8;">HBM3e (Off-Chip)</div>
+                    <div style="font-size: 0.75rem; color: #a5b4fc; margin-top: 0.25rem;">288 GB per B300 GPU</div>
+                    <div style="background: #0f172a; border-radius: 6px; padding: 0.5rem; margin-top: 0.75rem; font-size: 0.8rem; color: #cbd5e1; text-align: left;">
+                        <div style="font-weight: 600; color: #818cf8;">Stores:</div>
+                        <div>&bull; All 256 expert weight matrices</div>
+                        <div>&bull; KV cache</div>
+                        <div>&bull; Model embeddings</div>
+                    </div>
+                    <div style="background: #0f172a; border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.8rem; color: #cbd5e1;">
+                        <div style="font-weight: 600; color: #818cf8;">Bandwidth:</div>
+                        <div style="font-size: 1.2rem; font-weight: 700; color: #818cf8;">8 TB/s</div>
+                    </div>
+                </div>
+                <div style="color: #a5b4fc; font-size: 0.8rem; margin-top: 0.5rem;"><strong>WEIGHT STORAGE</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="two-col" style="margin-top: 1rem;">
+        <div class="card">
+            <h3>Why This Matters for MoE</h3>
+            <ul style="margin-left: 1.2rem; font-size: 0.9rem; color: #cbd5e1;">
+                <li>Expert weights (~4 MB each in NVFP4) must load from HBM &rarr; SRAM before compute</li>
+                <li>SRAM is only ~40 MB &mdash; <strong>cannot hold all 256 experts</strong></li>
+                <li>Top-8 routing: 8 experts &times; 4 MB = 32 MB per layer (fits in SRAM)</li>
+                <li>Bottleneck is HBM &rarr; SRAM transfer at 8 TB/s</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>GB10 vs B300: Memory Comparison</h3>
+            <table>
+                <thead><tr><th>Property</th><th>GB10</th><th>B300</th></tr></thead>
+                <tbody>
+                    <tr><td>HBM Capacity</td><td>128 GB (LPDDR5X)</td><td>288 GB (HBM3e)</td></tr>
+                    <tr><td>HBM Bandwidth</td><td>273 GB/s</td><td><strong style="color: #10b981;">8 TB/s</strong></td></tr>
+                    <tr><td>SRAM</td><td>~40 MB</td><td>~40 MB per GPU</td></tr>
+                    <tr><td>GPU Count</td><td>1</td><td>8 (with NVLink)</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SLIDE 5: MoE Architecture ==================== -->
+<div class="slide" id="slide-5">
+    <h1>MoE Architecture &amp; Routing</h1>
+    <p class="subtitle">How tokens flow through experts in Qwen3.6-35B-A3B</p>
+
+    <div class="diagram">
+        <p style="color: #94a3b8; margin-bottom: 1rem; text-align: center;">Each token passes through a router (gate) that selects the top-8 experts from 256. Only selected experts process the token.</p>
+        <div class="flow-row">
+            <div class="flow-box active" style="min-width: 180px;">
+                <div style="font-weight: 700;">Input Token</div>
+                <div style="font-size: 0.7rem; color: #94a3b8;">e.g. "The cat sat"</div>
+            </div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box" style="min-width: 180px; border-color: #a78bfa; background: #2e1065;">
+                <div style="font-weight: 700; color: #c4b5fd;">Router (Gate)</div>
+                <div style="font-size: 0.7rem; color: #94a3b8;">Scores all 256 experts</div>
+            </div>
+            <div class="flow-arrow">&rarr;</div>
+            <div class="flow-box" style="min-width: 180px; border-color: #f59e0b; background: #451a03;">
+                <div style="font-weight: 700; color: #fcd34d;">Top-8 Selection</div>
+                <div style="font-size: 0.7rem; color: #94a3b8;">8/256 = 3.1% active</div>
+            </div>
+        </div>
+        <div style="text-align: center; color: #64748b; margin: 0.5rem 0;">&darr;</div>
+        <div style="display: flex; justify-content: center; gap: 0.3rem; flex-wrap: wrap;">
+            <div class="flow-box cold" style="min-width: 40px; font-size: 0.7rem;">E0</div>
+            <div class="flow-box cold" style="min-width: 40px; font-size: 0.7rem;">E1</div>
+            <div class="flow-box cold" style="min-width: 40px; font-size: 0.7rem;">E2</div>
+            <div class="flow-box hot" style="min-width: 40px; font-size: 0.7rem; font-weight: 700;">E42</div>
+            <div class="flow-box cold" style="min-width: 40px; font-size: 0.7rem;">...</div>
+            <div class="flow-box hot" style="min-width: 40px; font-size: 0.7rem; font-weight: 700;">E87</div>
+            <div class="flow-box cold" style="min-width: 40px; font-size: 0.7rem;">...</div>
+            <div class="flow-box hot" style="min-width: 40px; font-size: 0.7rem; font-weight: 700;">E103</div>
+            <div class="flow-box cold" style="min-width: 40px; font-size: 0.7rem;">...</div>
+            <div class="flow-box hot" style="min-width: 40px; font-size: 0.7rem; font-weight: 700;">E156</div>
+            <div class="flow-box cold" style="min-width: 40px; font-size: 0.7rem;">...</div>
+            <div class="flow-box hot" style="min-width: 40px; font-size: 0.7rem; font-weight: 700;">E245</div>
+            <div class="flow-box cold" style="min-width: 40px; font-size: 0.7rem;">E255</div>
+        </div>
+        <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.75rem; font-size: 0.8rem; color: #94a3b8;">
+            <span><span style="display: inline-block; width: 12px; height: 12px; background: #ef4444; border-radius: 3px; vertical-align: middle;"></span> Selected (active)</span>
+            <span><span style="display: inline-block; width: 12px; height: 12px; background: #1e293b; border: 1px solid #334155; border-radius: 3px; vertical-align: middle;"></span> Not selected (idle)</span>
+        </div>
+    </div>
+
+    <div class="grid" style="margin-top: 1rem;">
+        <div class="card">
+            <h3>Model Stats</h3>
+            <div class="metric sm">35B</div>
+            <div class="metric-label">Total Parameters</div>
+            <div class="metric-sub">3B active per token (8.6%)</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">256</div>
+            <div class="metric-label">Experts</div>
+            <div class="metric-sub">Top-8 routing per token</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">40</div>
+            <div class="metric-label">MoE Layers</div>
+            <div class="metric-sub">Each has its own router</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">3.1%</div>
+            <div class="metric-label">Expert Utilization</div>
+            <div class="metric-sub">8/256 experts per token</div>
+        </div>
+    </div>
+
+    <div class="insight" style="margin-top: 1rem;">
+        <strong>All-to-All in Expert Parallelism:</strong> When experts are distributed across GPUs, tokens physically travel to the GPU hosting their selected expert. With 40 MoE layers, this dispatch-combine cycle happens <strong>80 times per forward pass</strong>. Hot experts create traffic jams.
+    </div>
+</div>
+
+<!-- ==================== SLIDE 6: Metrics ==================== -->
+<div class="slide" id="slide-6">
+    <h1>Routing Metrics Explained</h1>
+    <p class="subtitle">Four metrics that measure different aspects of expert distribution</p>
+
+    <div class="two-col">
+        <div class="metric-ref">
+            <h4>Normalized Entropy &mdash; Distribution Shape</h4>
+            <div class="formula">H = &minus;&Sigma;(p<sub>i</sub> &times; log<sub>2</sub>(p<sub>i</sub>)) / log<sub>2</sub>(K)</div>
+            <div class="interpretation">
+                <div class="interp-item"><div class="val" style="color: #ef4444;">0.0</div><div class="lbl">All tokens &rarr; 1 expert</div></div>
+                <div class="interp-item"><div class="val" style="color: #f59e0b;">0.76-0.85</div><div class="lbl">Qwen NVFP4 range</div></div>
+                <div class="interp-item"><div class="val" style="color: #10b981;">1.0</div><div class="lbl">Perfectly uniform</div></div>
+            </div>
+            <p class="small" style="margin-top: 0.5rem;"><strong style="color: #7dd3fc;">What it measures:</strong> How concentrated vs spread the load is. Does NOT tell you <em>which</em> experts are used.</p>
+        </div>
+
+        <div class="metric-ref">
+            <h4>Gini Coefficient &mdash; Load Inequality</h4>
+            <div class="formula">G = (2 &times; &Sigma;(i &times; y<sub>i</sub>)) / (n &times; &Sigma;y<sub>i</sub>) &minus; (n+1)/n</div>
+            <div class="interpretation">
+                <div class="interp-item"><div class="val" style="color: #10b981;">0.0</div><div class="lbl">Perfect equality</div></div>
+                <div class="interp-item"><div class="val" style="color: #f59e0b;">0.64-0.80</div><div class="lbl">Qwen NVFP4 range</div></div>
+                <div class="interp-item"><div class="val" style="color: #ef4444;">1.0</div><div class="lbl">One expert gets all</div></div>
+            </div>
+            <p class="small" style="margin-top: 0.5rem;"><strong style="color: #7dd3fc;">What it measures:</strong> How much hot experts dominate cold ones. A Gini of 0.80 means top 20% of experts handle ~60% of tokens.</p>
+        </div>
+
+        <div class="metric-ref">
+            <h4>Jaccard Index &mdash; Expert Set Overlap</h4>
+            <div class="formula">J(A, B) = |A &cap; B| / |A &cup; B|</div>
+            <div class="interpretation">
+                <div class="interp-item"><div class="val" style="color: #ef4444;">0.0</div><div class="lbl">No overlap</div></div>
+                <div class="interp-item"><div class="val" style="color: #f59e0b;">0.11-0.34</div><div class="lbl">Qwen NVFP4 range</div></div>
+                <div class="interp-item"><div class="val" style="color: #10b981;">1.0</div><div class="lbl">Identical experts</div></div>
+            </div>
+            <p class="small" style="margin-top: 0.5rem;"><strong style="color: #7dd3fc;">What it measures:</strong> Whether the same top-8 experts are selected across datasets. Low Jaccard = content-aware routing.</p>
+        </div>
+
+        <div class="metric-ref">
+            <h4>Cosine Similarity &mdash; Full Distribution Comparison</h4>
+            <div class="formula">cos(A, B) = (A &middot; B) / (&Vert;A&Vert; &times; &Vert;B&Vert;)</div>
+            <div class="interpretation">
+                <div class="interp-item"><div class="val" style="color: #ef4444;">0.0</div><div class="lbl">Orthogonal</div></div>
+                <div class="interp-item"><div class="val" style="color: #f59e0b;">0.49</div><div class="lbl">Text &harr; Random</div></div>
+                <div class="interp-item"><div class="val" style="color: #10b981;">1.0</div><div class="lbl">Identical</div></div>
+            </div>
+            <p class="small" style="margin-top: 0.5rem;"><strong style="color: #7dd3fc;">What it measures:</strong> How similarly all 256 experts are loaded across two datasets. Compares the full load vector.</p>
+        </div>
+    </div>
+
+    <div class="diagram" style="margin-top: 1rem;">
+        <p style="text-align: center; color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">How These Metrics Relate</p>
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+            <div style="text-align: center;">
+                <div style="background: #1e3a5f; border: 2px solid #38bdf8; border-radius: 10px; padding: 0.7rem 1.2rem;">
+                    <div style="font-weight: 700; color: #38bdf8;">Entropy</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;">Distribution shape</div>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <div style="background: #1e3a5f; border: 2px solid #38bdf8; border-radius: 10px; padding: 0.7rem 1.2rem;">
+                    <div style="font-weight: 700; color: #38bdf8;">Gini</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;">Load inequality</div>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <div style="background: #1e3a5f; border: 2px solid #38bdf8; border-radius: 10px; padding: 0.7rem 1.2rem;">
+                    <div style="font-weight: 700; color: #38bdf8;">Jaccard</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;">Set overlap</div>
+                </div>
+            </div>
+            <div style="text-align: center;">
+                <div style="background: #1e3a5f; border: 2px solid #38bdf8; border-radius: 10px; padding: 0.7rem 1.2rem;">
+                    <div style="font-weight: 700; color: #38bdf8;">Cosine</div>
+                    <div style="font-size: 0.7rem; color: #94a3b8;">Vector similarity</div>
+                </div>
+            </div>
+        </div>
+        <p style="text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 1rem;">Key: Entropy can be identical while Jaccard/Cosine are low &mdash; entropy measures <em>how</em> tokens are distributed, Jaccard/Cosine measure <em>where</em>.</p>
+    </div>
+</div>
+
+<!-- ==================== SLIDE 7: Test Results ==================== -->
+<div class="slide" id="slide-7">
+    <h1>Test Results: Uneven Expert Usage</h1>
+    <p class="subtitle">Heatmaps, histograms, and what they mean for GB10 vs XE9780</p>
+
+    <h3>Expert Selection Heatmap (Layer 0)</h3>
+    <div class="diagram">
+        <p class="small" style="margin-bottom: 0.75rem;">Which experts (columns) receive tokens from each dataset (rows)? Red = many tokens, dark = few, empty = none. Top 32 experts by peak load shown.</p>
+        <div id="heatmap-container"></div>
+        <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.75rem; font-size: 0.75rem; color: #94a3b8;">
+            <span><span style="display: inline-block; width: 12px; height: 12px; background: #ef4444; border-radius: 3px; vertical-align: middle;"></span> High load (&gt;50 tokens)</span>
+            <span><span style="display: inline-block; width: 12px; height: 12px; background: #f59e0b; border-radius: 3px; vertical-align: middle;"></span> Medium (10-50)</span>
+            <span><span style="display: inline-block; width: 12px; height: 12px; background: #1e3a5f; border-radius: 3px; vertical-align: middle;"></span> Low (1-9)</span>
+            <span><span style="display: inline-block; width: 12px; height: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 3px; vertical-align: middle;"></span> No tokens</span>
+        </div>
+    </div>
+
+    <h3 style="margin-top: 1rem;">Expert Load Histograms (Layer 0)</h3>
+    <div class="diagram">
+        <p class="small" style="margin-bottom: 0.75rem;">Token count per expert. Red = hot (&gt;50% max), yellow = warm (20-50%), dataset color = cold (&lt;20%).</p>
+        <div id="histogram-container"></div>
+    </div>
+
+    <div class="two-col" style="margin-top: 1rem;">
+        <div class="card green">
+            <h3 style="color: #10b981;">GB10 (Single GPU)</h3>
+            <ul style="margin-left: 1.2rem; font-size: 0.9rem; color: #cbd5e1;">
+                <li><strong style="color: #10b981;">No all-to-all communication</strong></li>
+                <li><strong style="color: #f59e0b;">SRAM contention</strong> &mdash; hot experts compete for on-chip resources</li>
+                <li><strong style="color: #f59e0b;">Memory bandwidth</strong> &mdash; hot experts generate HBM read bursts</li>
+                <li>Performance degrades ~30-50% with extreme imbalance</li>
+            </ul>
+        </div>
+        <div class="card red">
+            <h3 style="color: #ef4444;">XE9780 + 8&times;B300 (Multi-GPU)</h3>
+            <ul style="margin-left: 1.2rem; font-size: 0.9rem; color: #cbd5e1;">
+                <li><strong style="color: #ef4444;">All-to-all communication</strong> &mdash; hot experts create traffic jams</li>
+                <li><strong style="color: #ef4444;">GPU idle time</strong> &mdash; all GPUs wait for busiest expert</li>
+                <li><strong style="color: #ef4444;">Memory imbalance</strong> &mdash; hot expert GPU needs 20x more memory</li>
+                <li>Performance degrades 2-5x with extreme imbalance</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SLIDE 8: Entropy & Cosine Variations ==================== -->
+<div class="slide" id="slide-8">
+    <h1>Entropy &amp; Cosine Variations</h1>
+    <p class="subtitle">How routing changes across datasets, layers, and positions</p>
+
+    <h3>Single-Turn Entropy by Dataset</h3>
+    <div class="grid">
+        <div class="card">
+            <h3><span class="tag tag-text">TEXT</span></h3>
+            <div class="metric sm">0.761</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">Top expert: 8.3% &middot; 514 tokens</div>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-random">RANDOM</span></h3>
+            <div class="metric sm">0.785</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">Top expert: 8.0% &middot; 433 tokens</div>
+        </div>
+        <div class="card">
+            <h3><span class="tag tag-reasoning">REASONING</span></h3>
+            <div class="metric sm">0.761</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">Top expert: 8.2% &middot; 406 tokens</div>
+        </div>
+        <div class="card" style="border-color: #6ee7b7;">
+            <h3><span class="tag tag-hi">HI-REPEATED</span></h3>
+            <div class="metric sm" style="color: #6ee7b7;">0.526</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">Top expert: 12.5% &middot; 14/256 active</div>
+        </div>
+    </div>
+
+    <div class="insight warning" style="margin-top: 1rem;">
+        <strong>Key finding:</strong> Text, random, and reasoning all produce entropy in 0.76-0.79 range (content-agnostic). Hi-repeated drops to 0.526 &mdash; a <strong>30.9% reduction</strong> proving vocabulary diversity directly impacts routing.
+    </div>
+
+    <h3 style="margin-top: 1rem;">Multi-Turn Position Effect</h3>
+    <table>
+        <thead><tr><th>Position</th><th>Text</th><th>Random</th><th>Reasoning</th><th>Hi-Repeated</th></tr></thead>
+        <tbody>
+            <tr><td>Early (first 20%)</td><td>0.798</td><td>0.768</td><td>0.798</td><td style="color: #6ee7b7;">0.593</td></tr>
+            <tr><td>Mid (middle 60%)</td><td>0.858</td><td>0.830</td><td>0.854</td><td style="color: #6ee7b7;">0.623</td></tr>
+            <tr><td>Late (last 20%)</td><td>0.871</td><td>0.855</td><td>0.878</td><td style="color: #6ee7b7;">0.638</td></tr>
+        </tbody>
+    </table>
+    <p class="small">Entropy increases 6-12% from early &rarr; late &mdash; the router becomes more diverse as sequences progress.</p>
+
+    <h3 style="margin-top: 1rem;">Content-Aware Expert Selection (Cosine Similarity)</h3>
+    <table>
+        <thead><tr><th>Pair</th><th>Mean Cosine</th><th>Jaccard</th><th>Interpretation</th></tr></thead>
+        <tbody>
+            <tr><td><span class="tag tag-text">TEXT</span> &harr; <span class="tag tag-reasoning">REASONING</span></td><td style="color: #10b981;">0.763</td><td>0.339</td><td>Similar &mdash; both are structured language</td></tr>
+            <tr><td><span class="tag tag-text">TEXT</span> &harr; <span class="tag tag-random">RANDOM</span></td><td style="color: #f59e0b;">0.493</td><td>0.114</td><td>Different &mdash; router uses different experts</td></tr>
+            <tr><td><span class="tag tag-random">RANDOM</span> &harr; <span class="tag tag-reasoning">REASONING</span></td><td style="color: #ef4444;">0.465</td><td>0.118</td><td>Nearly disjoint &mdash; fundamentally different</td></tr>
+        </tbody>
+    </table>
+
+    <div class="insight" style="margin-top: 1rem;">
+        <strong>The paradox:</strong> Entropy is similar across text/random/reasoning (0.76-0.79), but Jaccard shows the router picks <strong>almost entirely different experts</strong> for each. Entropy measures <em>shape</em>, not <em>identity</em>.
+    </div>
+</div>
+
+<!-- ==================== SLIDE 9: Other Insights ==================== -->
+<div class="slide" id="slide-9">
+    <h1>Other Insights</h1>
+    <p class="subtitle">Layer variation, NVFP4 impact, and load imbalance quantification</p>
+
+    <div class="two-col">
+        <div>
+            <h3>Layer Variation</h3>
+            <table>
+                <thead><tr><th>Layer</th><th>Entropy</th><th>Max/Ideal</th><th>Gini</th><th>Cold Experts</th></tr></thead>
+                <tbody>
+                    <tr><td>0</td><td>0.864</td><td>8.2x</td><td>0.644</td><td>57 (22%)</td></tr>
+                    <tr><td>10</td><td>0.755</td><td>16.6x</td><td>0.800</td><td>93 (36%)</td></tr>
+                    <tr><td>20</td><td>0.784</td><td>20.6x</td><td>0.764</td><td>73 (29%)</td></tr>
+                    <tr><td>30</td><td>0.751</td><td>22.9x</td><td>0.804</td><td>96 (38%)</td></tr>
+                    <tr><td>39</td><td>0.767</td><td>11.1x</td><td>0.796</td><td>102 (40%)</td></tr>
+                </tbody>
+            </table>
+            <p class="small" style="margin-top: 0.5rem;">EP must provision for worst-case layer (layer 30: 22.9x ratio), not the average.</p>
+        </div>
+        <div>
+            <h3>Hi-Repeated: Vocabulary Impact by Layer</h3>
+            <div class="bar-chart">
+                <div class="bar-row">
+                    <div class="bar-label">Layer 0-2</div>
+                    <div class="bar-container"><div class="bar" style="width: 49%; background: linear-gradient(90deg, #ef4444, #f87171);">-49%</div></div>
+                </div>
+                <div class="bar-row">
+                    <div class="bar-label">Layer 5</div>
+                    <div class="bar-container"><div class="bar" style="width: 31%; background: linear-gradient(90deg, #f59e0b, #fbbf24);">-31%</div></div>
+                </div>
+                <div class="bar-row">
+                    <div class="bar-label">Layer 15</div>
+                    <div class="bar-container"><div class="bar" style="width: 18%; background: linear-gradient(90deg, #f59e0b, #fbbf24);">-18%</div></div>
+                </div>
+                <div class="bar-row">
+                    <div class="bar-label">Layer 25</div>
+                    <div class="bar-container"><div class="bar" style="width: 27%; background: linear-gradient(90deg, #f59e0b, #fbbf24);">-27%</div></div>
+                </div>
+                <div class="bar-row">
+                    <div class="bar-label">Layer 39</div>
+                    <div class="bar-container"><div class="bar" style="width: 40%; background: linear-gradient(90deg, #ef4444, #f87171);">-40%</div></div>
+                </div>
+            </div>
+            <p class="small">Vocabulary routing happens primarily in first few layers (49% reduction), partially reverses at final layer.</p>
+        </div>
+    </div>
+
+    <div class="grid" style="margin-top: 1rem;">
+        <div class="card">
+            <h3>Why Entropy Is Similar Across Content Types</h3>
+            <ol style="margin-left: 1.2rem; font-size: 0.9rem; color: #cbd5e1;">
+                <li><strong>Training regularization</strong> &mdash; auxiliary loss pushes ALL distributions toward same shape</li>
+                <li><strong>Top-8 structural constraint</strong> &mdash; 3.1% utilization limits how different entropy can be</li>
+                <li><strong>Short decode sequences</strong> &mdash; 8 tokens barely starts generation</li>
+                <li><strong>Router is content-agnostic in diversity</strong> &mdash; optimizes for balance, not content-dependent spread</li>
+            </ol>
+        </div>
+        <div class="card">
+            <h3>NVFP4 Quantization Impact</h3>
+            <ul style="margin-left: 1.2rem; font-size: 0.9rem; color: #cbd5e1;">
+                <li>4-bit precision reduces memory 4x vs bf16</li>
+                <li>Router gate uses 4-bit activations (minor quantization noise)</li>
+                <li>Entropy patterns stable across datasets (0.76-0.85)</li>
+                <li>Router is robust to precision loss</li>
+                <li>NVFP4 routing comparable to FP8 models</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== SLIDE 10: Summary ==================== -->
+<div class="slide" id="slide-10">
+    <h1>Summary</h1>
+    <p class="subtitle">Key findings and recommendations</p>
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
+        <div class="card highlight">
+            <div class="metric sm">30.9%</div>
+            <div class="metric-label">Entropy Drop</div>
+            <div class="metric-sub">Hi-repeated vs text (vocabulary impact)</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">8-23x</div>
+            <div class="metric-label">Load Imbalance</div>
+            <div class="metric-sub">Hot expert receives 8-23x ideal load</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">0.114</div>
+            <div class="metric-label">Jaccard (Text&harr;Random)</div>
+            <div class="metric-sub">Router picks nearly different experts</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">30-40%</div>
+            <div class="metric-label">Cold Experts</div>
+            <div class="metric-sub">Idle experts per layer in EP setup</div>
+        </div>
+    </div>
+
+    <div class="summary-box" style="margin-top: 1.5rem;">
+        <h3>Key Findings</h3>
+        <div class="two-col">
+            <div>
+                <ol style="margin-left: 1.2rem; font-size: 0.95rem; color: #cbd5e1;">
+                    <li style="margin-bottom: 0.5rem;"><strong>Content-agnostic routing diversity:</strong> Text, random, and reasoning produce similar entropy (0.76-0.79) but route to <em>different</em> experts (Jaccard 0.11)</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Vocabulary diversity is critical:</strong> Replacing all words with "hi" reduces entropy by 30.9%, creating hotspot experts</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Layer variation is severe:</strong> Entropy varies 0.70-0.86 across layers; EP must provision for worst-case (layer 30: 22.9x imbalance)</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Position effect is universal:</strong> Entropy increases 6-12% from early to late positions in all datasets</li>
+                </ol>
+            </div>
+            <div>
+                <h3 style="margin-top: 0;">Recommendations</h3>
+                <ol style="margin-left: 1.2rem; font-size: 0.95rem; color: #cbd5e1;">
+                    <li style="margin-bottom: 0.5rem;"><strong>For GB10:</strong> Load imbalance is manageable (SRAM-bound, ~30-50% perf loss)</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>For XE9780 + 8&times;B300:</strong> Load imbalance is critical (communication-bound, 2-5x perf loss). Use expert replication and dynamic load balancing</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>For repetitive workloads:</strong> Provision for 35x imbalance. Consider input preprocessing to diversify prompts</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>For monitoring:</strong> Track Jaccard/Cosine, not just entropy. Entropy alone misses content-dependent routing</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="insight success" style="margin-top: 1rem;">
+        <strong>Bottom line:</strong> The Qwen NVFP4 router is content-aware (routes differently for different content) but content-agnostic in diversity (similar distribution shape). Vocabulary repetition is the primary risk factor for load imbalance. For multi-GPU deployments, always provision for worst-case layers and repetitive input patterns.
+    </div>
+
+    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #334155; color: #94a3b8; font-size: 0.8rem;">
+        <p><strong>Hardware:</strong> Dell Pro Max &middot; NVIDIA GB10 (DGX Spark) &middot; 128 GB &nbsp;|&nbsp; <strong>Model:</strong> Qwen3.6-35B-A3B-NVFP4 &nbsp;|&nbsp; <strong>Date:</strong> August 13, 2026</p>
+        <p style="margin-top: 0.3rem;"><strong>Scripts:</strong> router_probe.py &middot; router_probe_multiturn.py &nbsp;|&nbsp; <strong>Data:</strong> /home/bala/pareto/results/final/qwen_nvfp4/routing/</p>
+    </div>
+</div>
+
+<!-- Navigation Bar -->
+<div class="nav">
+    <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">&larr; Previous</button>
+    <span class="nav-counter" id="slideCounter">1 / 10</span>
+    <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
+</div>
+
+<script>
+let currentSlide = 1;
+const totalSlides = 10;
+
+function changeSlide(direction) {
+    const newSlide = currentSlide + direction;
+    if (newSlide < 1 || newSlide > totalSlides) return;
+    document.getElementById('slide-' + currentSlide).classList.remove('active');
+    currentSlide = newSlide;
+    document.getElementById('slide-' + currentSlide).classList.add('active');
+    document.getElementById('slideCounter').textContent = currentSlide + ' / ' + totalSlides;
+    document.getElementById('prevBtn').disabled = currentSlide === 1;
+    document.getElementById('nextBtn').disabled = currentSlide === totalSlides;
+    document.getElementById('progress').style.width = (currentSlide / totalSlides * 100) + '%';
+    window.scrollTo(0, 0);
+}
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); changeSlide(1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); changeSlide(-1); }
+    if (e.key === 'Home') { e.preventDefault(); changeSlide(-currentSlide + 1); }
+    if (e.key === 'End') { e.preventDefault(); changeSlide(totalSlides - currentSlide); }
+});
+
+// Initialize
+document.getElementById('prevBtn').disabled = true;
+document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
+
+// Generate heatmap
+(function() {
+    const container = document.getElementById('heatmap-container');
+    if (!container) return;
+    const data = {
+        text:     [0,7,17,1,1,3,8,4,0,0,11,16,2,15,71,0,0,0,22,3,0,13,7,4,11,1,7,0,5,16,4,3,18,13,5,2,33,9,0,6,28,22,1,37,1,0,44,22,1,12,27,1,5,0,6,4,60,73,0,19,0,1,24,32,0,38,62,8,39,37,10,6,4,1,9,16,0,9,27,39,24,37,11,3,127,17,31,0,18,25,0,0,56,58,0,8,21,4,17,1,1,39,53,0,0,36,55,12,8,13,47,33,39,4,0,27,18,23,0,0,6,2,13,13,29,0,0,105,12,1,0,2,17,0,60,11,79,1,9,6,16,0,4,0,59,0,11,19,1,0,1,41,0,12,1,23,0,82,8,6,3,2,0,1,0,28,4,0,2,0,3,14,74,12,6,55,4,21,3,0,18,14,0,0,9,18,65,34,51,0,0,9,24,0,34,0,41,36,24,27,14,0,22,6,5,5,9,8,12,1,21,4,36,1,0,0,41,1,30,1,0,0,23,6,19,2,24,2,56,17,0,44,2,83,51,24,5,0,64,12,2,26,15,0,0,0,6,5,0,41,131,10,1,0,4,5],
+        random:   [0,0,12,15,2,11,13,2,12,6,2,62,0,16,5,5,91,1,0,67,2,5,36,2,0,0,4,41,1,67,0,1,8,251,4,6,0,27,0,0,53,4,10,11,7,0,0,1,9,30,4,7,17,1,0,0,0,56,0,1,11,4,19,54,4,36,14,2,0,1,7,5,21,1,1,50,2,13,0,46,7,25,15,9,0,13,65,2,13,12,16,2,68,6,10,14,63,47,30,0,8,50,2,0,6,8,1,6,0,27,0,72,109,4,3,0,5,0,82,2,41,2,0,7,19,11,23,2,58,20,0,6,2,43,33,46,0,22,1,0,0,10,0,3,9,8,22,22,6,4,0,0,0,17,10,60,0,52,10,0,5,0,11,8,3,82,25,7,0,16,3,37,20,1,3,4,0,2,2,0,0,0,22,29,0,6,14,2,3,1,8,3,4,6,0,44,0,9,49,1,3,0,7,11,3,85,32,3,4,15,0,21,0,0,49,0,0,13,0,2,1,63,21,9,95,5,6,14,6,0,20,21,15,36,123,4,15,1,3,6,3],
+        reasoning: [0,0,3,0,0,0,1,0,0,12,0,0,0,0,71,0,0,0,4,0,0,0,0,0,0,0,0,0,0,3,0,0,0,2,0,0,0,18,0,0,5,24,0,0,0,0,0,0,0,32,0,0,3,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,44,0,0,0,0,37,0,0,0,0,0,11,2,0,79,21,0,0,4,0,0,43,0,0,0,0,0,0,0,0,48,0,0,0,55,0,0,0,47,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,94,0,0,0,0,0,0,52,0,0,0,0,0,0,0,59,0,0,3,0,0,0,0,0,0,0,0,0,0,0,82,0,0,0,0,0,0,0,0,0,3,56,12,6,55,0,0,3,0,0,0,0,0,9,0,65,34,51,0,0,0,24,0,0,0,0,36,24,0,14,0,22,0,5,5,0,0,0,0,21,0,0,0,0,1,0,0,0,0,19,2,24,0,56,0,0,0,83,0,24,5,0,0,0,0,15,0,0,0,0,6,5,0,0,131,0,0,0,0,0],
+        hi:       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,453,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,150,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,395,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,453,0,0,0,0,0,0,29,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,116,0,0,0,482,0,0,0,453,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,424,274,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,424,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    };
+    const maxLoad = new Array(256).fill(0);
+    for (const ds of Object.values(data)) { for (let i = 0; i < ds.length; i++) { maxLoad[i] = Math.max(maxLoad[i], ds[i]); } }
+    const topExperts = Array.from({length: 256}, (_, i) => i).sort((a, b) => maxLoad[b] - maxLoad[a]).slice(0, 32);
+    const allMax = Math.max(...maxLoad);
+    function getColor(val) {
+        if (val === 0) return '#0f172a';
+        const norm = val / allMax;
+        if (norm > 0.3) return `rgba(239, 68, 68, ${0.4 + norm * 0.6})`;
+        if (norm > 0.1) return `rgba(245, 158, 11, ${0.3 + norm * 0.7})`;
+        return `rgba(30, 58, 95, ${0.3 + norm * 0.7})`;
+    }
+    const datasets = [{name:'TEXT',key:'text',color:'#c4b5fd'},{name:'RANDOM',key:'random',color:'#fcd34d'},{name:'REASONING',key:'reasoning',color:'#f9a8d4'},{name:'HI-REPEATED',key:'hi',color:'#6ee7b7'}];
+    let html = '<div style="overflow-x: auto;"><div style="min-width: 600px;">';
+    html += '<div class="heatmap-row"><div class="heatmap-label"></div>';
+    for (const e of topExperts) { html += `<div style="width: 18px; text-align: center; font-size: 0.5rem; color: #64748b; transform: rotate(-45deg); transform-origin: center; margin-bottom: 6px;">E${e}</div>`; }
+    html += '</div>';
+    for (const ds of datasets) {
+        html += `<div class="heatmap-row"><div class="heatmap-label" style="color: ${ds.color};">${ds.name}</div>`;
+        for (const e of topExperts) {
+            const val = data[ds.key][e];
+            html += `<div style="width: 18px; height: 18px; border-radius: 2px; background: ${getColor(val)}; display: flex; align-items: center; justify-content: center; font-size: 0.45rem; color: ${val > allMax * 0.2 ? '#fff' : '#64748b'};" title="Expert ${e}: ${val} tokens">${val > 0 ? val : ''}</div>`;
+        }
+        html += '</div>';
+    }
+    html += '</div></div>';
+    html += '<p style="text-align: center; color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">Top 32 experts by peak load at Layer 0. Note how red (hot) cells appear in different columns for each dataset. Hi-repeated: only 14 experts receive all 482 tokens.</p>';
+    container.innerHTML = html;
+})();
+
+// Generate histograms
+(function() {
+    const container = document.getElementById('histogram-container');
+    if (!container) return;
+    const data = {
+        text:     [0,7,17,1,1,3,8,4,0,0,11,16,2,15,71,0,0,0,22,3,0,13,7,4,11,1,7,0,5,16,4,3,18,13,5,2,33,9,0,6,28,22,1,37,1,0,44,22,1,12,27,1,5,0,6,4,60,73,0,19,0,1,24,32,0,38,62,8,39,37,10,6,4,1,9,16,0,9,27,39,24,37,11,3,127,17,31,0,18,25,0,0,56,58,0,8,21,4,17,1,1,39,53,0,0,36,55,12,8,13,47,33,39,4,0,27,18,23,0,0,6,2,13,13,29,0,0,105,12,1,0,2,17,0,60,11,79,1,9,6,16,0,4,0,59,0,11,19,1,0,1,41,0,12,1,23,0,82,8,6,3,2,0,1,0,28,4,0,2,0,3,14,74,12,6,55,4,21,3,0,18,14,0,0,9,18,65,34,51,0,0,9,24,0,34,0,41,36,24,27,14,0,22,6,5,5,9,8,12,1,21,4,36,1,0,0,41,1,30,1,0,0,23,6,19,2,24,2,56,17,0,44,2,83,51,24,5,0,64,12,2,26,15,0,0,0,6,5,0,41,131,10,1,0,4,5],
+        random:   [0,0,12,15,2,11,13,2,12,6,2,62,0,16,5,5,91,1,0,67,2,5,36,2,0,0,4,41,1,67,0,1,8,251,4,6,0,27,0,0,53,4,10,11,7,0,0,1,9,30,4,7,17,1,0,0,0,56,0,1,11,4,19,54,4,36,14,2,0,1,7,5,21,1,1,50,2,13,0,46,7,25,15,9,0,13,65,2,13,12,16,2,68,6,10,14,63,47,30,0,8,50,2,0,6,8,1,6,0,27,0,72,109,4,3,0,5,0,82,2,41,2,0,7,19,11,23,2,58,20,0,6,2,43,33,46,0,22,1,0,0,10,0,3,9,8,22,22,6,4,0,0,0,17,10,60,0,52,10,0,5,0,11,8,3,82,25,7,0,16,3,37,20,1,3,4,0,2,2,0,0,0,22,29,0,6,14,2,3,1,8,3,4,6,0,44,0,9,49,1,3,0,7,11,3,85,32,3,4,15,0,21,0,0,49,0,0,13,0,2,1,63,21,9,95,5,6,14,6,0,20,21,15,36,123,4,15,1,3,6,3],
+        reasoning: [0,0,3,0,0,0,1,0,0,12,0,0,0,0,71,0,0,0,4,0,0,0,0,0,0,0,0,0,0,3,0,0,0,2,0,0,0,18,0,0,5,24,0,0,0,0,0,0,0,32,0,0,3,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,44,0,0,0,0,37,0,0,0,0,0,11,2,0,79,21,0,0,4,0,0,43,0,0,0,0,0,0,0,0,48,0,0,0,55,0,0,0,47,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,94,0,0,0,0,0,0,52,0,0,0,0,0,0,0,59,0,0,3,0,0,0,0,0,0,0,0,0,0,0,82,0,0,0,0,0,0,0,0,0,3,56,12,6,55,0,0,3,0,0,0,0,0,9,0,65,34,51,0,0,0,24,0,0,0,0,36,24,0,14,0,22,0,5,5,0,0,0,0,21,0,0,0,0,1,0,0,0,0,19,2,24,0,56,0,0,0,83,0,24,5,0,0,0,0,15,0,0,0,0,6,5,0,0,131,0,0,0,0,0],
+        hi:       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,453,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,150,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,395,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,453,0,0,0,0,0,0,29,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,116,0,0,0,482,0,0,0,453,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,424,274,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,424,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+    };
+    const datasets = [{name:'TEXT',key:'text',color:'#c4b5fd'},{name:'RANDOM',key:'random',color:'#fcd34d'},{name:'REASONING',key:'reasoning',color:'#f9a8d4'},{name:'HI-REPEATED',key:'hi',color:'#6ee7b7'}];
+    const chartWidth = 520, chartHeight = 100, barWidth = 2.0, gap = 0.1;
+    let html = '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">';
+    for (const ds of datasets) {
+        const loadData = data[ds.key];
+        const maxL = Math.max(...loadData);
+        const total = loadData.reduce((a,b) => a+b, 0);
+        const active = loadData.filter(v => v > 0).length;
+        html += `<div style="background: #0f172a; border-radius: 8px; padding: 0.75rem;">`;
+        html += `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">`;
+        html += `<span style="color: ${ds.color}; font-weight: 600; font-size: 0.85rem;">${ds.name}</span>`;
+        html += `<span style="color: #64748b; font-size: 0.65rem;">${active}/256 active &middot; ${total} tokens</span>`;
+        html += `</div>`;
+        html += `<svg width="100%" viewBox="0 0 ${chartWidth} ${chartHeight}" style="display: block;">`;
+        for (let i = 0; i <= 4; i++) {
+            const y = chartHeight - (i / 4) * (chartHeight - 10);
+            html += `<line x1="0" y1="${y}" x2="${chartWidth}" y2="${y}" stroke="#1e293b" stroke-width="1"/>`;
+            html += `<text x="2" y="${y - 2}" fill="#475569" font-size="6">${Math.round(maxL * i / 4)}</text>`;
+        }
+        for (let i = 0; i < 256; i++) {
+            const val = loadData[i];
+            const barH = maxL > 0 ? (val / maxL) * (chartHeight - 12) : 0;
+            const x = i * (barWidth + gap);
+            let fill = '#1e293b';
+            if (val > 0) { const norm = val / maxL; if (norm > 0.5) fill = '#ef4444'; else if (norm > 0.2) fill = '#f59e0b'; else fill = ds.color; }
+            html += `<rect x="${x}" y="${chartHeight - barH}" width="${barWidth}" height="${barH}" fill="${fill}" rx="0.5"><title>E${i}: ${val}</title></rect>`;
+        }
+        for (let i = 0; i <= 255; i += 32) { html += `<text x="${i * (barWidth + gap)}" y="${chartHeight}" fill="#475569" font-size="6" text-anchor="middle">E${i}</text>`; }
+        html += `</svg></div>`;
+    }
+    html += '</div>';
+    html += '<p style="text-align: center; color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">Text/random/reasoning spread across 70-100 experts; hi-repeated concentrates on just 14 with extreme peaks (453 tokens on one expert).</p>';
+    container.innerHTML = html;
+})();
+</script>
+
+</body>
+</html>
