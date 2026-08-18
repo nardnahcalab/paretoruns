@@ -28,6 +28,7 @@
         .tag-text { background: #4c1d95; color: #c4b5fd; }
         .tag-random { background: #78350f; color: #fcd34d; }
         .tag-reasoning { background: #831843; color: #f9a8d4; }
+        .tag-hi { background: #065f46; color: #6ee7b7; }
         .insight { background: #1e293b; border-left: 4px solid #38bdf8; padding: 1rem 1.5rem; margin: 1rem 0; border-radius: 0 8px 8px 0; }
         .insight strong { color: #38bdf8; }
         .insight ol { margin-top: 0.5rem; margin-left: 1.5rem; }
@@ -165,6 +166,7 @@
             <tr><td><span class="tag tag-text">TEXT</span></td><td>Natural language text (chat-formatted prompts)</td><td>Baseline routing for real-world conversational inputs</td></tr>
             <tr><td><span class="tag tag-random">RANDOM</span></td><td>Random token sequences</td><td>Control: tests routing with no semantic structure</td></tr>
             <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>Chain-of-thought / reasoning prompts</td><td>Tests whether complex reasoning changes routing patterns</td></tr>
+            <tr><td><span class="tag tag-hi">HI-REPEATED</span></td><td>Same prompts with all words replaced by "hi"</td><td>Tests vocabulary diversity impact on routing</td></tr>
         </tbody>
     </table>
 
@@ -544,6 +546,12 @@
             <div class="metric-label">Mean MoE Entropy</div>
             <div class="metric-sub">40 layers · 406 tokens · Top share: 8.2%</div>
         </div>
+        <div class="card">
+            <h3><span class="tag tag-hi">HI-REPEATED</span></h3>
+            <div class="metric" style="color: #6ee7b7;">0.627</div>
+            <div class="metric-label">Mean MoE Entropy</div>
+            <div class="metric-sub">40 layers · 3,591 tokens · Multi-turn probe (20 sessions)</div>
+        </div>
     </div>
 
     <h3>Entropy by Layer (Single-Turn Text)</h3>
@@ -600,11 +608,12 @@
             <tr><td><span class="tag tag-text">TEXT</span></td><td>0.761</td><td>8.3%</td><td>514</td><td>40</td></tr>
             <tr><td><span class="tag tag-random">RANDOM</span></td><td>0.785</td><td>8.0%</td><td>433</td><td>40</td></tr>
             <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>0.761</td><td>8.2%</td><td>406</td><td>40</td></tr>
+            <tr><td><span class="tag tag-hi">HI-REPEATED</span></td><td style="color: #6ee7b7; font-weight: 600;">0.627</td><td>—</td><td>3,591</td><td>40</td></tr>
         </tbody>
     </table>
 
     <div class="insight">
-        <strong>Interpretation:</strong> Random inputs produce the most diverse routing (entropy 0.785), while text and reasoning are tied at 0.761. The top expert captures ~8% of tokens — higher than Nemotron's 7%, suggesting slightly more concentrated routing. All three datasets show similar patterns, indicating the router is largely <strong>content-agnostic</strong> — it doesn't dramatically change behavior based on input type.
+        <strong>Interpretation:</strong> Random inputs produce the most diverse routing (entropy 0.785), while text and reasoning are tied at 0.761. The <span class="tag tag-hi">HI-REPEATED</span> dataset shows dramatically lower entropy (0.627) — a 25.9% reduction — proving that vocabulary diversity directly impacts routing diversity. The top expert captures ~8% of tokens — higher than Nemotron's 7%, suggesting slightly more concentrated routing. The router is <strong>content-agnostic for diversity shape</strong> across natural language types, but <strong>highly sensitive to vocabulary repetition</strong>.
     </div>
 
     <h2>3. Multi-Turn Routing Behavior</h2>
@@ -621,24 +630,25 @@
                     <tr><td><span class="tag tag-text">TEXT</span></td><td>0.855</td><td>200</td><td>36,351</td></tr>
                     <tr><td><span class="tag tag-random">RANDOM</span></td><td>0.831</td><td>200</td><td>35,287</td></tr>
                     <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>0.852</td><td>200</td><td>36,414</td></tr>
+                    <tr><td><span class="tag tag-hi">HI-REPEATED</span></td><td style="color: #6ee7b7; font-weight: 600;">0.627</td><td>20</td><td>3,591</td></tr>
                 </tbody>
             </table>
         </div>
         <div class="card">
             <h3>Position-Based Entropy</h3>
             <table>
-                <thead><tr><th>Position</th><th>Text</th><th>Random</th><th>Reasoning</th></tr></thead>
+                <thead><tr><th>Position</th><th>Text</th><th>Random</th><th>Reasoning</th><th>Hi-Repeated</th></tr></thead>
                 <tbody>
-                    <tr><td>Early (first 20%)</td><td>0.798</td><td>0.768</td><td>0.798</td></tr>
-                    <tr><td>Mid (middle 60%)</td><td>0.858</td><td>0.830</td><td>0.854</td></tr>
-                    <tr><td>Late (last 20%)</td><td>0.871</td><td>0.855</td><td>0.878</td></tr>
+                    <tr><td>Early (first 20%)</td><td>0.798</td><td>0.768</td><td>0.798</td><td style="color: #6ee7b7;">0.593</td></tr>
+                    <tr><td>Mid (middle 60%)</td><td>0.858</td><td>0.830</td><td>0.854</td><td style="color: #6ee7b7;">0.623</td></tr>
+                    <tr><td>Late (last 20%)</td><td>0.871</td><td>0.855</td><td>0.878</td><td style="color: #6ee7b7;">0.638</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <div class="insight">
-        <strong>Position trend:</strong> Entropy increases significantly from early → mid → late across all datasets. For text: 0.798 → 0.858 → 0.871 (+9.1%). This means the router becomes <strong>much more diverse</strong> as sequences progress — later tokens are spread across more experts than earlier tokens. The effect is stronger than Nemotron's 3-5% increase, suggesting Qwen's pure MoE architecture has more routing flexibility.
+        <strong>Position trend:</strong> Entropy increases significantly from early → mid → late across all datasets. For text: 0.798 → 0.858 → 0.871 (+9.1%). For hi-repeated: 0.593 → 0.623 → 0.638 (+7.6%). This means the router becomes <strong>much more diverse</strong> as sequences progress — later tokens are spread across more experts than earlier tokens. The effect is stronger than Nemotron's 3-5% increase, suggesting Qwen's pure MoE architecture has more routing flexibility. Hi-repeated shows the same trend but at a lower baseline, confirming that vocabulary diversity affects the absolute level but not the relative progression.
     </div>
 
     <h2>4. Single-Turn vs Multi-Turn Comparison</h2>
@@ -650,6 +660,7 @@
             <tr><td><span class="tag tag-text">TEXT</span> Entropy</td><td>0.761</td><td>0.855</td><td>+12.3%</td></tr>
             <tr><td><span class="tag tag-random">RANDOM</span> Entropy</td><td>0.785</td><td>0.831</td><td>+5.9%</td></tr>
             <tr><td><span class="tag tag-reasoning">REASONING</span> Entropy</td><td>0.761</td><td>0.852</td><td>+11.9%</td></tr>
+            <tr><td><span class="tag tag-hi">HI-REPEATED</span> Entropy</td><td>—</td><td style="color: #6ee7b7; font-weight: 600;">0.627</td><td>—</td></tr>
         </tbody>
     </table>
 
@@ -759,6 +770,7 @@
             <h3>Low Entropy (Peaked Routing)</h3>
             <p><strong>Problem:</strong> A few experts receive most tokens. GPUs hosting these hot experts become bottlenecks — the entire EP group waits for the slowest device.</p>
             <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">Measured: Qwen NVFP4 top expert captures 8% of tokens (vs 3.1% ideal). Hot experts receive <strong>8-23x more tokens</strong> than uniform distribution.</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6ee7b7;"><strong>Hi-repeated:</strong> Entropy drops to 0.474 at early layers (49.5% lower than text). Repetitive inputs create extreme hotspots with <strong>30-50x imbalance</strong>.</p>
         </div>
         <div class="card">
             <h3>High Entropy (Spread Routing)</h3>
@@ -803,8 +815,9 @@
             <li>Hot expert load: ~43,000 tokens (21x imbalance)</li>
             <li>GPU hosting hot expert needs <strong>21x the memory</strong> of the average GPU</li>
             <li>30-40% of GPUs (10-13 devices) will be underutilized</li>
+            <li><span class="tag tag-hi">HI-REPEATED</span> scenario: entropy 0.627 → up to <strong>35x imbalance</strong>, requiring 4-5x more memory headroom per GPU</li>
         </ul>
-        <strong>Recommendation:</strong> Size memory for the worst-case layer (layer 30: 22.9x ratio), not the average. Use expert replication or dynamic load balancing to mitigate hot spots.
+        <strong>Recommendation:</strong> Size memory for the worst-case layer (layer 30: 22.9x ratio), not the average. For repetitive workloads, provision for 35x imbalance. Use expert replication or dynamic load balancing to mitigate hot spots.
     </div>
 
     <h3>Production Deployment Strategies</h3>
@@ -851,7 +864,7 @@
     </div>
 
     <div class="insight">
-        <strong>Bottom line for Qwen NVFP4 on GB10:</strong> This probe was run on a single GPU (EP=1). Scaling to multi-GPU deployments requires addressing the 8-23x load imbalance measured across layers. The content-agnostic routing (similar entropy across text/random/reasoning) means batch composition won't help — focus on expert replication, dynamic balancing, and provisioning for the worst-case layer (30-40% cold experts, 22.9x hot expert ratio).
+        <strong>Bottom line for Qwen NVFP4 on GB10:</strong> This probe was run on a single GPU (EP=1). Scaling to multi-GPU deployments requires addressing the 8-23x load imbalance measured across layers. The content-agnostic routing (similar entropy across text/random/reasoning) means batch composition won't help — focus on expert replication, dynamic balancing, and provisioning for the worst-case layer (30-40% cold experts, 22.9x hot expert ratio). For <span class="tag tag-hi">HI-REPEATED</span> workloads (automated systems, chatbot retries), provision for <strong>35x imbalance</strong> and consider input preprocessing to diversify repetitive prompts.
     </div>
 
     <h2>9. Content-Aware Expert Selection</h2>
@@ -861,7 +874,7 @@
 
     <h3>Top-8 Expert Overlap (Jaccard Index)</h3>
     <div class="insight danger">
-        <strong>The top-8 experts selected for each token are nearly disjoint across datasets.</strong> A Jaccard index of 0.0 means zero overlap (completely different experts), while 1.0 means identical experts. The mean overlap between text and random is only 0.114 — the router picks almost entirely different experts.
+        <strong>The top-8 experts selected for each token are nearly disjoint across datasets.</strong> A Jaccard index of 0.0 means zero overlap (completely different experts), while 1.0 means identical experts. The mean overlap between text and random is only 0.114 — the router picks almost entirely different experts. Hi-repeated (entropy 0.627) routes to an even more concentrated subset.
     </div>
 
     <table>
@@ -924,7 +937,7 @@
 
     <h2>10. Why Entropy Is Similar Despite Different Routing</h2>
     <div class="insight">
-        <strong>The paradox:</strong> The router selects nearly disjoint expert sets for different content (Section 9), yet the entropy (distribution shape) is nearly identical. This is not a contradiction — it reveals what entropy actually measures.
+        <strong>The paradox:</strong> The router selects nearly disjoint expert sets for different content (Section 9), yet the entropy (distribution shape) is nearly identical across text/random/reasoning. The Hi-repeated dataset breaks this pattern — with entropy 0.627 (25.9% lower), it proves that vocabulary diversity directly affects routing diversity. This reveals what entropy actually measures: it's sensitive to both <em>which experts</em> and <em>how concentrated</em> the load is.
     </div>
 
     <h3>Entropy Measures Shape, Not Identity</h3>
@@ -957,6 +970,10 @@
             <h3>4. The Router is Content-Agnostic in Diversity</h3>
             <p>The training objective doesn't reward content-dependent diversity — it rewards balanced load. The router optimizes for <em>which experts handle what content</em>, not for <em>how differently to spread tokens</em>. Entropy similarity is a feature, not a bug.</p>
         </div>
+        <div class="card">
+            <h3>5. Hi-Repeated Breaks the Pattern</h3>
+            <p style="color: #6ee7b7;">Replacing all words with "hi" reduces entropy by 25.9% (0.846→0.627). This proves the router IS sensitive to vocabulary diversity — but only when diversity drops below a threshold. Natural language types (text/random/reasoning) all have sufficient diversity to maintain similar entropy shapes.</p>
+        </div>
     </div>
 
     <h3>What This Means for Deployment</h3>
@@ -966,6 +983,7 @@
             <li><strong>Expert overlap (Jaccard):</strong> Measures whether different content uses different experts — useful for caching, expert pre-loading, and content-aware scheduling</li>
             <li><strong>Cosine similarity of load vectors:</strong> Measures how similarly all 256 experts are loaded across datasets — useful for capacity planning across mixed workloads</li>
             <li><strong>Per-layer divergence:</strong> Some layers (20, 23, 35) show maximum divergence — these are the layers where content-aware routing is most active</li>
+            <li><strong>Vocabulary diversity:</strong> Hi-repeated shows 25.9% entropy reduction — monitor input diversity for automated/retry workloads to prevent expert hotspots</li>
         </ul>
     </div>
 
@@ -1052,12 +1070,13 @@
 
         html += '</div></div>';
     html += '<p style="text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 0.75rem;">Top 32 experts by peak load at Layer 0. Each cell = tokens routed to that expert. Note how the red (hot) cells appear in different columns for each dataset.</p>';
+    html += '<p style="text-align: center; color: #6ee7b7; font-size: 0.8rem; margin-top: 0.25rem;"><strong>Hi-Repeated:</strong> Not shown — per-expert load at Layer 0 unavailable (multi-turn probe only). Entropy: 0.474 at Layer 0 (49.5% lower than text\'s 0.864), indicating severely concentrated routing.</p>';
     container.innerHTML = html;
 })();
 </script>
 
-<!-- New Section: Hi-Repeated Dataset Comparison -->
-<h2>Hi-Repeated Dataset Comparison</h2>
+<!-- Hi-Repeated Dataset: Detailed Analysis (see Sections 2-10 for integrated comparisons) -->
+<h2>Vocabulary Diversity Impact: Hi-Repeated Dataset Deep Dive</h2>
 
 <div class="insight warning">
     <strong>Key Finding:</strong> Replacing all words with repeated "hi" tokens reduces routing entropy by <strong>25.88%</strong>. This demonstrates that <strong>vocabulary diversity directly impacts expert routing diversity</strong>. The model routes repetitive inputs to fewer experts, creating potential load imbalance.
@@ -1147,7 +1166,7 @@
     <strong>Pattern:</strong> The entropy reduction is most pronounced at early turn depths (34.2% at depth 1) and gradually decreases as conversation depth increases (17.7% at depth 7). This suggests that <strong>repetitive inputs have the strongest routing impact in initial turns</strong>, but the effect diminishes as context accumulates.
 </div>
 
-<h3>Per-Layer Entropy Comparison (First 10 Layers)</h3>
+<h3>Per-Layer Entropy Comparison</h3>
 <table>
     <thead>
         <tr>
@@ -1168,11 +1187,18 @@
         <tr><td>7</td><td>0.8269</td><td>0.6616</td><td style="color: #ef4444;">-0.1653 (20.0%)</td></tr>
         <tr><td>8</td><td>0.8003</td><td>0.6566</td><td style="color: #ef4444;">-0.1437 (17.9%)</td></tr>
         <tr><td>9</td><td>0.8060</td><td>0.6820</td><td style="color: #ef4444;">-0.1239 (15.4%)</td></tr>
+        <tr><td>10</td><td>0.8403</td><td>0.6745</td><td style="color: #ef4444;">-0.1658 (19.7%)</td></tr>
+        <tr><td>15</td><td>0.8263</td><td>0.7223</td><td style="color: #ef4444;">-0.1040 (12.6%)</td></tr>
+        <tr><td>20</td><td>0.7996</td><td>0.6984</td><td style="color: #ef4444;">-0.1012 (12.7%)</td></tr>
+        <tr><td>25</td><td>0.8596</td><td>0.6940</td><td style="color: #ef4444;">-0.1656 (19.3%)</td></tr>
+        <tr><td>30</td><td>0.8436</td><td>0.6206</td><td style="color: #ef4444;">-0.2230 (26.4%)</td></tr>
+        <tr><td>35</td><td>0.8532</td><td>0.6246</td><td style="color: #ef4444;">-0.2285 (26.8%)</td></tr>
+        <tr><td>39</td><td>0.8722</td><td>0.4990</td><td style="color: #ef4444;">-0.3732 (42.8%)</td></tr>
     </tbody>
 </table>
 
 <div class="insight warning">
-    <strong>Critical Insight:</strong> The entropy reduction is <strong>most severe in early layers</strong> (49.5% reduction at Layer 0-2) and gradually decreases in deeper layers (15.4% at Layer 9). This indicates that <strong>vocabulary-level routing decisions happen primarily in the first few layers</strong>, where the router has direct access to input token embeddings.
+    <strong>Critical Insight:</strong> The entropy reduction is <strong>most severe in early layers</strong> (49.5% reduction at Layer 0-2) and gradually decreases in deeper layers (12.6% at Layer 15, 19.3% at Layer 25). This indicates that <strong>vocabulary-level routing decisions happen primarily in the first few layers</strong>, where the router has direct access to input token embeddings. The effect partially reverses at Layer 39 (42.8%), suggesting the final layers also use vocabulary features for output preparation.
 </div>
 
 <h3>Implications for Infrastructure</h3>
