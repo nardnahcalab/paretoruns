@@ -863,12 +863,17 @@ document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
         return `rgba(30, 58, 95, ${0.3 + norm * 0.7})`;
     }
     const datasets = [{name:'TEXT',key:'text',color:'#c4b5fd'},{name:'RANDOM',key:'random',color:'#fcd34d'},{name:'REASONING',key:'reasoning',color:'#f9a8d4'},{name:'HI-REPEATED',key:'hi',color:'#6ee7b7'}];
-    // Show all 256 experts in a grid layout
+    // Show all 256 experts with numbers inside cells
+    const cellW = 7, cellH = 18;
     let html = '<div style="overflow-x: auto;"><div style="min-width: 500px;">';
-    // Expert number labels at top
-    html += '<div style="display: flex; gap: 0; margin-bottom: 2px;"><div style="width: 70px;"></div>';
+    // Expert number labels at top (every 16)
+    html += `<div style="display: flex; gap: 0; margin-bottom: 2px;"><div style="width: 70px;"></div>`;
     for (let i = 0; i < 256; i++) {
-        html += `<div style="width: 4px; text-align: center;"></div>`;
+        if (i % 16 === 0) {
+            html += `<div style="width: ${cellW}px; text-align: center; font-size: 0.45rem; color: #64748b;">|</div>`;
+        } else {
+            html += `<div style="width: ${cellW}px;"></div>`;
+        }
     }
     html += '</div>';
     // Each dataset row
@@ -877,17 +882,19 @@ document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
         for (let i = 0; i < 256; i++) {
             const val = data[ds.key][i];
             const cellColor = getColor(val);
-            html += `<div style="width: 4px; height: 12px; background: ${cellColor}; border-radius: 1px;" title="E${i}: ${val} tokens"></div>`;
+            const textColor = val > allMax * 0.25 ? '#fff' : (val > 0 ? '#cbd5e1' : '#334155');
+            const fontSize = val >= 100 ? '0.4rem' : '0.45rem';
+            html += `<div style="width: ${cellW}px; height: ${cellH}px; background: ${cellColor}; border-radius: 1px; display: flex; align-items: center; justify-content: center; font-size: ${fontSize}; color: ${textColor}; font-weight: 600; font-variant-numeric: tabular-nums;" title="E${i}: ${val} tokens">${val > 0 ? val : ''}</div>`;
         }
         html += '</div>';
     }
     // Expert number scale at bottom
-    html += '<div style="display: flex; gap: 0; margin-top: 4px;"><div style="width: 70px;"></div>';
+    html += `<div style="display: flex; gap: 0; margin-top: 3px;"><div style="width: 70px;"></div>`;
     for (let i = 0; i < 256; i++) {
         if (i % 32 === 0) {
-            html += `<div style="width: 4px; text-align: center; font-size: 0.5rem; color: #64748b;">${i}</div>`;
+            html += `<div style="width: ${cellW}px; text-align: center; font-size: 0.5rem; color: #64748b; font-variant-numeric: tabular-nums;">${i}</div>`;
         } else {
-            html += `<div style="width: 4px;"></div>`;
+            html += `<div style="width: ${cellW}px;"></div>`;
         }
     }
     html += '</div>';
