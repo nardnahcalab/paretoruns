@@ -803,16 +803,108 @@
     </div>
 </div>
 
+<div class="slide" id="slide-11">
+    <h1>GPU Power &amp; Energy Efficiency</h1>
+    <p class="subtitle">Power consumption across workloads and correlation with routing entropy</p>
+
+    <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 1fr; margin-bottom: 1rem;">
+        <div class="card">
+            <div class="metric sm">33-34W</div>
+            <div class="metric-label">Sustained Power</div>
+            <div class="metric-sub">GB10 under inference load</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">4.0-4.3</div>
+            <div class="metric-label">tok/s/W</div>
+            <div class="metric-sub">Energy efficiency (output)</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">231-251</div>
+            <div class="metric-label">mJ / output token</div>
+            <div class="metric-sub">Energy per generated token</div>
+        </div>
+        <div class="card">
+            <div class="metric sm">14-67W</div>
+            <div class="metric-label">Power Range</div>
+            <div class="metric-sub">Idle to peak (sustained ~34W)</div>
+        </div>
+    </div>
+
+    <div class="diagram">
+        <h3>Power Efficiency by Dataset (Concurrency 8, 128-token output)</h3>
+        <div class="bar-chart">
+            <div class="bar-row">
+                <div class="bar-label" style="width: 140px;">RANDOM</div>
+                <div class="bar-container"><div class="bar" style="width: 92%; background: linear-gradient(90deg, #10b981, #34d399);">4.33 tok/s/W &middot; 231 mJ/tok</div></div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label" style="width: 140px;">TEXT</div>
+                <div class="bar-container"><div class="bar" style="width: 87%; background: linear-gradient(90deg, #3b82f6, #60a5fa);">4.02 tok/s/W &middot; 249 mJ/tok</div></div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label" style="width: 140px;">REASONING</div>
+                <div class="bar-container"><div class="bar" style="width: 84%; background: linear-gradient(90deg, #f59e0b, #fbbf24);">3.98 tok/s/W &middot; 251 mJ/tok</div></div>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 1.5rem;">Routing Entropy vs Energy Efficiency</h3>
+        <div id="power-entropy-chart" style="height: 200px; position: relative;"></div>
+
+        <h3 style="margin-top: 1.5rem;">GPU Utilization by Dataset</h3>
+        <div class="bar-chart">
+            <div class="bar-row">
+                <div class="bar-label" style="width: 140px;">TEXT</div>
+                <div class="bar-container"><div class="bar" style="width: 83.9%; background: linear-gradient(90deg, #3b82f6, #60a5fa);">83.9%</div></div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label" style="width: 140px;">RANDOM</div>
+                <div class="bar-container"><div class="bar" style="width: 83.8%; background: linear-gradient(90deg, #10b981, #34d399);">83.8%</div></div>
+            </div>
+            <div class="bar-row">
+                <div class="bar-label" style="width: 140px;">REASONING</div>
+                <div class="bar-container"><div class="bar" style="width: 74.6%; background: linear-gradient(90deg, #f59e0b, #fbbf24);">74.6%</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="summary-box" style="margin-top: 1rem;">
+        <h3>Power &amp; Routing Correlation</h3>
+        <div class="two-col">
+            <div>
+                <h4>Workload-Independent Power</h4>
+                <ul>
+                    <li>GPU draws <strong>33-34W</strong> sustained regardless of dataset — power is dominated by memory subsystem, not compute</li>
+                    <li>GB10 power range: 14W (idle) → 67W (peak), sustained ~34W during inference</li>
+                    <li>Temperature: 63-69°C under load</li>
+                </ul>
+            </div>
+            <div>
+                <h4>Efficiency Varies by Routing Pattern</h4>
+                <ul>
+                    <li><strong>Random</strong> (entropy 2.53): most efficient — 4.33 tok/s/W, 231 mJ/tok</li>
+                    <li><strong>Text</strong> (entropy 2.54): middle — 4.02 tok/s/W, 249 mJ/tok</li>
+                    <li><strong>Reasoning</strong> (entropy 2.38): least efficient — 3.98 tok/s/W, 251 mJ/tok, 74.6% GPU util</li>
+                    <li>Lower entropy ≠ better efficiency; reasoning chains reduce GPU utilization despite similar power draw</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #334155; color: #94a3b8; font-size: 0.75rem;">
+        <p><strong>Source:</strong> AIPerf sweep experiments (Qwen3.6-35B-A3B-NVFP4, GB10, pynvml telemetry) &nbsp;|&nbsp; Routing probes: router_probe.py</p>
+    </div>
+</div>
+
 <!-- Navigation Bar -->
 <div class="nav">
     <button class="nav-btn" id="prevBtn" onclick="changeSlide(-1)">&larr; Previous</button>
-    <span class="nav-counter" id="slideCounter">1 / 10</span>
+    <span class="nav-counter" id="slideCounter">1 / 11</span>
     <button class="nav-btn" id="nextBtn" onclick="changeSlide(1)">Next &rarr;</button>
 </div>
 
 <script>
 let currentSlide = 1;
-const totalSlides = 10;
+const totalSlides = 11;
 
 function changeSlide(direction) {
     const newSlide = currentSlide + direction;
@@ -908,6 +1000,43 @@ document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
     html += '</div>';
     html += '<p style="text-align: center; color: #64748b; font-size: 0.7rem; margin-top: 0.5rem;">All 256 experts at Layer 0. Each column = one expert (E0-E255). Note how hot (red) cells appear in different positions for each dataset. Hi-repeated: only 14 experts receive all 482 tokens.</p>';
     container.innerHTML = html;
+})();
+
+// Generate entropy vs efficiency scatter chart
+(function() {
+    const container = document.getElementById('power-entropy-chart');
+    if (!container) return;
+    const points = [
+        {name:'TEXT', entropy:2.542, tokPerW:4.02, color:'#c4b5fd'},
+        {name:'RANDOM', entropy:2.528, tokPerW:4.33, color:'#fcd34d'},
+        {name:'REASONING', entropy:2.382, tokPerW:3.98, color:'#f9a8d4'}
+    ];
+    const padL=60, padR=40, padT=20, padB=40;
+    const w=520, h=180;
+    const eMin=2.3, eMax=2.6, tMin=3.8, tMax=4.5;
+    function x(v){return padL+(v-eMin)/(eMax-eMin)*(w-padL-padR);}
+    function y(v){return padT+(tMax-v)/(tMax-tMin)*(h-padT-padB);}
+    let svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;max-width:520px;margin:0 auto;display:block;">`;
+    // Grid
+    for(let e=2.3;e<=2.6;e+=0.05){
+        svg+=`<line x1="${x(e)}" y1="${padT}" x2="${x(e)}" y2="${h-padB}" stroke="#1e293b" stroke-width="0.5"/>`;
+        svg+=`<text x="${x(e)}" y="${h-padB+14}" text-anchor="middle" fill="#64748b" font-size="9">${e.toFixed(2)}</text>`;
+    }
+    for(let t=3.8;t<=4.5;t+=0.1){
+        svg+=`<line x1="${padL}" y1="${y(t)}" x2="${w-padR}" y2="${y(t)}" stroke="#1e293b" stroke-width="0.5"/>`;
+        svg+=`<text x="${padL-8}" y="${y(t)+3}" text-anchor="end" fill="#64748b" font-size="9">${t.toFixed(1)}</text>`;
+    }
+    // Axes labels
+    svg+=`<text x="${(padL+w-padR)/2}" y="${h-2}" text-anchor="middle" fill="#94a3b8" font-size="10">Routing Entropy (bits)</text>`;
+    svg+=`<text x="12" y="${(padT+h-padB)/2}" text-anchor="middle" fill="#94a3b8" font-size="10" transform="rotate(-90,12,${(padT+h-padB)/2})">tok/s/W</text>`;
+    // Points
+    for(const p of points){
+        svg+=`<circle cx="${x(p.entropy)}" cy="${y(p.tokPerW)}" r="8" fill="${p.color}" stroke="#fff" stroke-width="1.5" opacity="0.9"/>`;
+        svg+=`<text x="${x(p.entropy)}" y="${y(p.tokPerW)-14}" text-anchor="middle" fill="${p.color}" font-size="10" font-weight="600">${p.name}</text>`;
+        svg+=`<text x="${x(p.entropy)}" y="${y(p.tokPerW)+4}" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">${p.tokPerW}</text>`;
+    }
+    svg+=`</svg>`;
+    container.innerHTML = svg;
 })();
 
 // Generate histograms
