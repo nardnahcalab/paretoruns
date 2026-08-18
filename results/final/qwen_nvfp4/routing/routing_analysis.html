@@ -969,6 +969,164 @@
         <strong>Bottom line for Qwen NVFP4 on GB10:</strong> This probe was run on a single GPU (EP=1). Scaling to multi-GPU deployments requires addressing the 8-23x load imbalance measured across layers. The content-agnostic routing (similar entropy across text/random/reasoning) means batch composition won't help — focus on expert replication, dynamic balancing, and provisioning for the worst-case layer (30-40% cold experts, 22.9x hot expert ratio). For <span class="tag tag-hi">HI-REPEATED</span> workloads (automated systems, chatbot retries), provision for <strong>35x imbalance</strong> and consider input preprocessing to diversify repetitive prompts.
     </div>
 
+    <h2>8b. Does Load Imbalance Matter? GB10 vs XE9780</h2>
+
+    <h3>GB10 (DGX Spark) — Single GPU</h3>
+    <div class="two-col">
+        <div class="card">
+            <h3>Architecture</h3>
+            <ul style="margin-left: 1.5rem; color: #cbd5e1;">
+                <li>1 GPU, 128 GB unified LPDDR5X memory</li>
+                <li>273 GB/s memory bandwidth</li>
+                <li>No inter-GPU communication (no NVLink, no all-to-all)</li>
+                <li>All 256 experts reside on the same die</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Load Imbalance Impact</h3>
+            <ul style="margin-left: 1.5rem; color: #cbd5e1;">
+                <li><strong style="color: #10b981;">No all-to-all communication</strong> — no network bottleneck</li>
+                <li><strong style="color: #f59e0b;">SRAM contention</strong> — hot experts compete for on-chip compute resources</li>
+                <li><strong style="color: #f59e0b;">Memory bandwidth</strong> — hot experts generate bursts of HBM reads</li>
+                <li><strong style="color: #10b981;">Still matters</strong> but less severely — compute is the bottleneck, not communication</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>XE9780 with 8×B300 — Multi-GPU Expert Parallelism</h3>
+    <div class="two-col">
+        <div class="card">
+            <h3>Architecture</h3>
+            <ul style="margin-left: 1.5rem; color: #cbd5e1;">
+                <li>8 GPUs, each 288 GB HBM3e (2.3 TB total)</li>
+                <li>8 TB/s HBM bandwidth per GPU</li>
+                <li>1.8 TB/s NVLink GPU-to-GPU bandwidth</li>
+                <li>256 experts sharded across 8 GPUs (32 per GPU)</li>
+            </ul>
+        </div>
+        <div class="card">
+            <h3>Load Imbalance Impact</h3>
+            <ul style="margin-left: 1.5rem; color: #cbd5e1;">
+                <li><strong style="color: #ef4444;">All-to-all communication</strong> — hot experts create traffic jams</li>
+                <li><strong style="color: #ef4444;">GPU idle time</strong> — all GPUs wait for the busiest expert</li>
+                <li><strong style="color: #ef4444;">Memory imbalance</strong> — hot expert GPU needs 20x more memory</li>
+                <li><strong style="color: #ef4444;">Critical</strong> — 8-23x imbalance directly degrades throughput</li>
+            </ul>
+        </div>
+    </div>
+
+    <h3>GPU Memory Hierarchy: Where Compute Happens</h3>
+    <div class="diagram-container">
+        <p style="color: #94a3b8; margin-bottom: 1.5rem;">Understanding why SRAM capacity matters for MoE inference requires knowing the GPU memory hierarchy. Data flows from HBM → SRAM → Tensor Cores, and back. Only data in SRAM can participate in computation.</p>
+
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin: 2rem 0;">
+            <!-- SRAM Box -->
+            <div style="text-align: center; min-width: 220px;">
+                <div style="background: #065f46; border: 2px solid #10b981; border-radius: 12px; padding: 1.2rem; min-height: 280px;">
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #10b981;">SRAM (On-Chip)</div>
+                    <div style="font-size: 0.75rem; color: #6ee7b7; margin-top: 0.25rem;">~256 KB per SM × 160 SMs = ~40 MB</div>
+                    <div style="background: #0f172a; border-radius: 6px; padding: 0.5rem; margin-top: 0.75rem; font-size: 0.8rem; color: #cbd5e1;">
+                        <div style="font-weight: 600; color: #10b981;">Stores:</div>
+                        <div>• Register file (per-thread state)</div>
+                        <div>• Shared memory / L1 cache</div>
+                        <div>• <strong>Current expert's weights</strong></div>
+                        <div>• Token activations being computed</div>
+                    </div>
+                    <div style="background: #0f172a; border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.8rem; color: #cbd5e1;">
+                        <div style="font-weight: 600; color: #10b981;">Bandwidth:</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #10b981;">19+ TB/s</div>
+                        <div style="font-size: 0.7rem; color: #94a3b8;">~2.4x faster than HBM</div>
+                    </div>
+                </div>
+                <div style="color: #6ee7b7; font-size: 0.8rem; margin-top: 0.5rem;"><strong>WHERE COMPUTE HAPPENS</strong></div>
+                <div style="color: #94a3b8; font-size: 0.75rem;">Tensor Cores read/write here</div>
+            </div>
+
+            <!-- Arrow -->
+            <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; min-width: 60px;">
+                <div style="color: #64748b; font-size: 0.7rem;">Load weights</div>
+                <div style="font-size: 2rem; color: #f59e0b;">⇄</div>
+                <div style="color: #64748b; font-size: 0.7rem;">8 TB/s per GPU</div>
+            </div>
+
+            <!-- HBM Box -->
+            <div style="text-align: center; min-width: 220px;">
+                <div style="background: #1e1b4b; border: 2px solid #818cf8; border-radius: 12px; padding: 1.2rem; min-height: 280px;">
+                    <div style="font-size: 1.3rem; font-weight: 700; color: #818cf8;">HBM3e (Off-Chip)</div>
+                    <div style="font-size: 0.75rem; color: #a5b4fc; margin-top: 0.25rem;">288 GB per B300 GPU</div>
+                    <div style="background: #0f172a; border-radius: 6px; padding: 0.5rem; margin-top: 0.75rem; font-size: 0.8rem; color: #cbd5e1;">
+                        <div style="font-weight: 600; color: #818cf8;">Stores:</div>
+                        <div>• <strong>All 256 expert weight matrices</strong></div>
+                        <div>• KV cache (key-value pairs)</div>
+                        <div>• Model embeddings</div>
+                        <div>• Activation buffers</div>
+                    </div>
+                    <div style="background: #0f172a; border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; font-size: 0.8rem; color: #cbd5e1;">
+                        <div style="font-weight: 600; color: #818cf8;">Bandwidth:</div>
+                        <div style="font-size: 1.1rem; font-weight: 700; color: #818cf8;">8 TB/s</div>
+                        <div style="font-size: 0.7rem; color: #94a3b8;">Fast but much larger capacity</div>
+                    </div>
+                </div>
+                <div style="color: #a5b4fc; font-size: 0.8rem; margin-top: 0.5rem;"><strong>WEIGHT STORAGE</strong></div>
+                <div style="color: #94a3b8; font-size: 0.75rem;">Expert parameters live here</div>
+            </div>
+        </div>
+
+        <div class="insight" style="margin-top: 1.5rem;">
+            <strong>Why SRAM capacity matters for MoE:</strong>
+            <ul style="margin-top: 0.5rem; margin-left: 1.5rem;">
+                <li><strong>Expert weights must be loaded into SRAM</strong> before computation. Each expert's weight matrix for one layer is ~4 MB in NVFP4. With top-8 routing, 8 experts must be loaded per token per layer.</li>
+                <li><strong>SRAM is only ~40 MB total</strong> — it cannot hold all 256 experts simultaneously. Only the active experts (top-8) can be in SRAM at once.</li>
+                <li><strong>Hot experts cause SRAM thrashing</strong> — if many tokens route to the same expert, its weights stay in SRAM (good). But if routing is imbalanced, some GPUs load hot expert weights repeatedly while cold expert SRAM slots sit idle.</li>
+                <li><strong>The bottleneck is HBM→SRAM transfer</strong> — at 8 TB/s, loading one expert's weights takes ~0.5 μs. With 256 experts and top-8, the router must fetch 8 expert weight sets per token. The HBM bandwidth determines how fast this happens.</li>
+            </ul>
+        </div>
+
+        <h3>SRAM Capacity Impact on MoE Inference</h3>
+        <table>
+            <thead>
+                <tr><th>Scenario</th><th>SRAM Usage</th><th>HBM→SRAM Transfers</th><th>Performance Impact</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><span class="tag tag-text">TEXT</span> Balanced routing</td>
+                    <td>8 experts × 4 MB = 32 MB (fits in SRAM)</td>
+                    <td>Minimal — weights stay cached</td>
+                    <td style="color: #10b981;">Optimal — full SRAM utilization</td>
+                </tr>
+                <tr>
+                    <td><span class="tag tag-hi">HI-REPEATED</span> Concentrated routing</td>
+                    <td>1-2 experts × 4 MB = 4-8 MB (wastes SRAM)</td>
+                    <td>Minimal — same expert reused</td>
+                    <td style="color: #f59e0b;">Suboptimal — 75% SRAM idle</td>
+                </tr>
+                <tr>
+                    <td>Multi-GPU EP with hot expert</td>
+                    <td>32 experts per GPU (1 per GPU)</td>
+                    <td>Heavy — all GPUs send tokens to hot GPU</td>
+                    <td style="color: #ef4444;">Bottleneck — hot GPU overloaded</td>
+                </tr>
+                <tr>
+                    <td>Hi-repeated + Multi-GPU EP</td>
+                    <td>1-2 experts active</td>
+                    <td>Extreme — all tokens → 1-2 GPUs</td>
+                    <td style="color: #ef4444;">Worst case — 7 GPUs idle</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="two-col" style="margin-top: 1.5rem;">
+            <div class="card">
+                <h3 style="color: #10b981;">GB10: SRAM-Bound</h3>
+                <p>Single GPU means no communication overhead. The bottleneck is SRAM capacity and HBM bandwidth. Load imbalance wastes SRAM (idle slots) but doesn't cause network contention. Performance degrades ~30-50% with extreme imbalance due to underutilized Tensor Cores.</p>
+            </div>
+            <div class="card">
+                <h3 style="color: #ef4444;">XE9780: Communication-Bound</h3>
+                <p>8 GPUs with NVLink means all-to-all communication dominates. Load imbalance creates: (1) GPU idle time waiting for hot expert, (2) unbalanced NVLink traffic, (3) memory imbalance across GPUs. Performance degrades 2-5x with extreme imbalance.</p>
+            </div>
+        </div>
+    </div>
+
     <h2>9. Content-Aware Expert Selection</h2>
     <div class="insight">
         <strong>Despite similar entropy, the router selects very different experts for different content types.</strong> Entropy measures the <em>shape</em> of the routing distribution (how concentrated vs spread), not <em>which</em> experts are used. The data below proves the router is content-aware — it routes to fundamentally different expert subsets depending on input type.
