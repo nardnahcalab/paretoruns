@@ -847,7 +847,7 @@
             </div>
         </div>
 
-        <h3 style="margin-top: 1.5rem;">Routing Entropy vs Energy Efficiency</h3>
+        <h3 style="margin-top: 1.5rem;">Active Experts vs Energy Efficiency</h3>
         <div id="power-entropy-chart" style="height: 200px; position: relative;"></div>
 
         <h3 style="margin-top: 1.5rem;">GPU Utilization by Dataset</h3>
@@ -879,12 +879,13 @@
                 </ul>
             </div>
             <div>
-                <h4>Efficiency Varies by Routing Pattern</h4>
+                <h4>Active Experts Drive Efficiency</h4>
                 <ul>
-                    <li><strong>Random</strong> (entropy 2.53): most efficient — 4.33 tok/s/W, 231 mJ/tok</li>
-                    <li><strong>Text</strong> (entropy 2.54): middle — 4.02 tok/s/W, 249 mJ/tok</li>
-                    <li><strong>Reasoning</strong> (entropy 2.38): least efficient — 3.98 tok/s/W, 251 mJ/tok, 74.6% GPU util</li>
-                    <li>Lower entropy ≠ better efficiency; reasoning chains reduce GPU utilization despite similar power draw</li>
+                    <li><strong>Random</strong>: 188 active experts → best efficiency (4.33 tok/s/W, 231 mJ/tok)</li>
+                    <li><strong>Text</strong>: 164 active experts → middle (4.02 tok/s/W, 249 mJ/tok)</li>
+                    <li><strong>Reasoning</strong>: 158 active experts → worst (3.98 tok/s/W, 251 mJ/tok, 74.6% GPU util)</li>
+                    <li><strong>Hi-repeated</strong>: only 36 active experts — would be least efficient (68.8% concentration in top-8)</li>
+                    <li>More active experts = better GPU SM utilization = higher tok/s/W</li>
                 </ul>
             </div>
         </div>
@@ -1007,33 +1008,33 @@ document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
     const container = document.getElementById('power-entropy-chart');
     if (!container) return;
     const points = [
-        {name:'TEXT', entropy:2.542, tokPerW:4.02, color:'#c4b5fd'},
-        {name:'RANDOM', entropy:2.528, tokPerW:4.33, color:'#fcd34d'},
-        {name:'REASONING', entropy:2.382, tokPerW:3.98, color:'#f9a8d4'}
+        {name:'TEXT', active:164.0, tokPerW:4.02, conc:34.8, color:'#c4b5fd'},
+        {name:'RANDOM', active:187.6, tokPerW:4.33, conc:34.4, color:'#fcd34d'},
+        {name:'REASONING', active:157.8, tokPerW:3.98, conc:35.0, color:'#f9a8d4'}
     ];
     const padL=60, padR=40, padT=20, padB=40;
     const w=520, h=180;
-    const eMin=2.3, eMax=2.6, tMin=3.8, tMax=4.5;
-    function x(v){return padL+(v-eMin)/(eMax-eMin)*(w-padL-padR);}
-    function y(v){return padT+(tMax-v)/(tMax-tMin)*(h-padT-padB);}
+    const xMin=140, xMax=200, yMin=3.8, yMax=4.5;
+    function x(v){return padL+(v-xMin)/(xMax-xMin)*(w-padL-padR);}
+    function y(v){return padT+(yMax-v)/(yMax-yMin)*(h-padT-padB);}
     let svg = `<svg viewBox="0 0 ${w} ${h}" style="width:100%;max-width:520px;margin:0 auto;display:block;">`;
     // Grid
-    for(let e=2.3;e<=2.6;e+=0.05){
-        svg+=`<line x1="${x(e)}" y1="${padT}" x2="${x(e)}" y2="${h-padB}" stroke="#1e293b" stroke-width="0.5"/>`;
-        svg+=`<text x="${x(e)}" y="${h-padB+14}" text-anchor="middle" fill="#64748b" font-size="9">${e.toFixed(2)}</text>`;
+    for(let v=140;v<=200;v+=10){
+        svg+=`<line x1="${x(v)}" y1="${padT}" x2="${x(v)}" y2="${h-padB}" stroke="#1e293b" stroke-width="0.5"/>`;
+        svg+=`<text x="${x(v)}" y="${h-padB+14}" text-anchor="middle" fill="#64748b" font-size="9">${v}</text>`;
     }
-    for(let t=3.8;t<=4.5;t+=0.1){
-        svg+=`<line x1="${padL}" y1="${y(t)}" x2="${w-padR}" y2="${y(t)}" stroke="#1e293b" stroke-width="0.5"/>`;
-        svg+=`<text x="${padL-8}" y="${y(t)+3}" text-anchor="end" fill="#64748b" font-size="9">${t.toFixed(1)}</text>`;
+    for(let v=3.8;v<=4.5;v+=0.1){
+        svg+=`<line x1="${padL}" y1="${y(v)}" x2="${w-padR}" y2="${y(v)}" stroke="#1e293b" stroke-width="0.5"/>`;
+        svg+=`<text x="${padL-8}" y="${y(v)+3}" text-anchor="end" fill="#64748b" font-size="9">${v.toFixed(1)}</text>`;
     }
     // Axes labels
-    svg+=`<text x="${(padL+w-padR)/2}" y="${h-2}" text-anchor="middle" fill="#94a3b8" font-size="10">Routing Entropy (bits)</text>`;
+    svg+=`<text x="${(padL+w-padR)/2}" y="${h-2}" text-anchor="middle" fill="#94a3b8" font-size="10">Active Experts / Layer</text>`;
     svg+=`<text x="12" y="${(padT+h-padB)/2}" text-anchor="middle" fill="#94a3b8" font-size="10" transform="rotate(-90,12,${(padT+h-padB)/2})">tok/s/W</text>`;
     // Points
     for(const p of points){
-        svg+=`<circle cx="${x(p.entropy)}" cy="${y(p.tokPerW)}" r="8" fill="${p.color}" stroke="#fff" stroke-width="1.5" opacity="0.9"/>`;
-        svg+=`<text x="${x(p.entropy)}" y="${y(p.tokPerW)-14}" text-anchor="middle" fill="${p.color}" font-size="10" font-weight="600">${p.name}</text>`;
-        svg+=`<text x="${x(p.entropy)}" y="${y(p.tokPerW)+4}" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">${p.tokPerW}</text>`;
+        svg+=`<circle cx="${x(p.active)}" cy="${y(p.tokPerW)}" r="8" fill="${p.color}" stroke="#fff" stroke-width="1.5" opacity="0.9"/>`;
+        svg+=`<text x="${x(p.active)}" y="${y(p.tokPerW)-14}" text-anchor="middle" fill="${p.color}" font-size="10" font-weight="600">${p.name}</text>`;
+        svg+=`<text x="${x(p.active)}" y="${y(p.tokPerW)+4}" text-anchor="middle" fill="#fff" font-size="8" font-weight="700">${p.tokPerW}</text>`;
     }
     svg+=`</svg>`;
     container.innerHTML = svg;
