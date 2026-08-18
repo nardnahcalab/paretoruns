@@ -548,9 +548,9 @@
         </div>
         <div class="card">
             <h3><span class="tag tag-hi">HI-REPEATED</span></h3>
-            <div class="metric" style="color: #6ee7b7;">0.627</div>
+            <div class="metric" style="color: #6ee7b7;">0.526</div>
             <div class="metric-label">Mean MoE Entropy</div>
-            <div class="metric-sub">40 layers · 3,591 tokens · Multi-turn probe (20 sessions)</div>
+            <div class="metric-sub">40 layers · 482 tokens · 14 active experts (Layer 0)</div>
         </div>
     </div>
 
@@ -608,12 +608,12 @@
             <tr><td><span class="tag tag-text">TEXT</span></td><td>0.761</td><td>8.3%</td><td>514</td><td>40</td></tr>
             <tr><td><span class="tag tag-random">RANDOM</span></td><td>0.785</td><td>8.0%</td><td>433</td><td>40</td></tr>
             <tr><td><span class="tag tag-reasoning">REASONING</span></td><td>0.761</td><td>8.2%</td><td>406</td><td>40</td></tr>
-            <tr><td><span class="tag tag-hi">HI-REPEATED</span></td><td style="color: #6ee7b7; font-weight: 600;">0.627</td><td>—</td><td>3,591</td><td>40</td></tr>
+            <tr><td><span class="tag tag-hi">HI-REPEATED</span></td><td style="color: #6ee7b7; font-weight: 600;">0.526</td><td>12.5%</td><td>482</td><td>40</td></tr>
         </tbody>
     </table>
 
     <div class="insight">
-        <strong>Interpretation:</strong> Random inputs produce the most diverse routing (entropy 0.785), while text and reasoning are tied at 0.761. The <span class="tag tag-hi">HI-REPEATED</span> dataset shows dramatically lower entropy (0.627) — a 25.9% reduction — proving that vocabulary diversity directly impacts routing diversity. The top expert captures ~8% of tokens — higher than Nemotron's 7%, suggesting slightly more concentrated routing. The router is <strong>content-agnostic for diversity shape</strong> across natural language types, but <strong>highly sensitive to vocabulary repetition</strong>.
+        <strong>Interpretation:</strong> Random inputs produce the most diverse routing (entropy 0.785), while text and reasoning are tied at 0.761. The <span class="tag tag-hi">HI-REPEATED</span> dataset shows dramatically lower entropy (0.526 single-turn, 0.627 multi-turn) — a 30.9% / 25.9% reduction — proving that vocabulary diversity directly impacts routing diversity. The top expert captures 12.5% of tokens (vs 8.3% for text), with only 14 of 256 experts receiving any tokens at Layer 0. The router is <strong>content-agnostic for diversity shape</strong> across natural language types, but <strong>highly sensitive to vocabulary repetition</strong>.
     </div>
 
     <h2>3. Multi-Turn Routing Behavior</h2>
@@ -660,7 +660,7 @@
             <tr><td><span class="tag tag-text">TEXT</span> Entropy</td><td>0.761</td><td>0.855</td><td>+12.3%</td></tr>
             <tr><td><span class="tag tag-random">RANDOM</span> Entropy</td><td>0.785</td><td>0.831</td><td>+5.9%</td></tr>
             <tr><td><span class="tag tag-reasoning">REASONING</span> Entropy</td><td>0.761</td><td>0.852</td><td>+11.9%</td></tr>
-            <tr><td><span class="tag tag-hi">HI-REPEATED</span> Entropy</td><td>—</td><td style="color: #6ee7b7; font-weight: 600;">0.627</td><td>—</td></tr>
+            <tr><td><span class="tag tag-hi">HI-REPEATED</span> Entropy</td><td style="color: #6ee7b7; font-weight: 600;">0.526</td><td>0.627</td><td>+19.2%</td></tr>
         </tbody>
     </table>
 
@@ -770,7 +770,7 @@
             <h3>Low Entropy (Peaked Routing)</h3>
             <p><strong>Problem:</strong> A few experts receive most tokens. GPUs hosting these hot experts become bottlenecks — the entire EP group waits for the slowest device.</p>
             <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #94a3b8;">Measured: Qwen NVFP4 top expert captures 8% of tokens (vs 3.1% ideal). Hot experts receive <strong>8-23x more tokens</strong> than uniform distribution.</p>
-            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6ee7b7;"><strong>Hi-repeated:</strong> Entropy drops to 0.474 at early layers (49.5% lower than text). Repetitive inputs create extreme hotspots with <strong>30-50x imbalance</strong>.</p>
+            <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #6ee7b7;"><strong>Hi-repeated:</strong> Entropy drops to 0.526 (single-turn) / 0.627 (multi-turn). Layer 0 shows 12.5% top expert share vs 8.3% for text. Only 14 of 256 experts receive tokens at Layer 0 — <strong>extreme hotspot risk</strong>.</p>
         </div>
         <div class="card">
             <h3>High Entropy (Spread Routing)</h3>
@@ -1018,7 +1018,8 @@
     const data = {
         text:     [0,7,17,1,1,3,8,4,0,0,11,16,2,15,71,0,0,0,22,3,0,13,7,4,11,1,7,0,5,16,4,3,18,13,5,2,33,9,0,6,28,22,1,37,1,0,44,22,1,12,27,1,5,0,6,4,60,73,0,19,0,1,24,32,0,38,62,8,39,37,10,6,4,1,9,16,0,9,27,39,24,37,11,3,127,17,31,0,18,25,0,0,56,58,0,8,21,4,17,1,1,39,53,0,0,36,55,12,8,13,47,33,39,4,0,27,18,23,0,0,6,2,13,13,29,0,0,105,12,1,0,2,17,0,60,11,79,1,9,6,16,0,4,0,59,0,11,19,1,0,1,41,0,12,1,23,0,82,8,6,3,2,0,1,0,28,4,0,2,0,3,14,74,12,6,55,4,21,3,0,18,14,0,0,9,18,65,34,51,0,0,9,24,0,34,0,41,36,24,27,14,0,22,6,5,5,9,8,12,1,21,4,36,1,0,0,41,1,30,1,0,0,23,6,19,2,24,2,56,17,0,44,2,83,51,24,5,0,64,12,2,26,15,0,0,0,6,5,0,41,131,10,1,0,4,5],
         random:   [0,0,12,15,2,11,13,2,12,6,2,62,0,16,5,5,91,1,0,67,2,5,36,2,0,0,4,41,1,67,0,1,8,251,4,6,0,27,0,0,53,4,10,11,7,0,0,1,9,30,4,7,17,1,0,0,0,56,0,1,11,4,19,54,4,36,14,2,0,1,7,5,21,1,1,50,2,13,0,46,7,25,15,9,0,13,65,2,13,12,16,2,68,6,10,14,63,47,30,0,8,50,2,0,6,8,1,6,0,27,0,72,109,4,3,0,5,0,82,2,41,2,0,7,19,11,23,2,58,20,0,6,2,43,33,46,0,22,1,0,0,10,0,3,9,8,22,22,6,4,0,0,0,17,10,60,0,52,10,0,5,0,11,8,3,82,25,7,0,16,3,37,20,1,3,4,0,2,2,0,0,0,22,29,0,6,14,2,3,1,8,3,4,6,0,44,0,9,49,1,3,0,7,11,3,85,32,3,4,15,0,21,0,0,49,0,0,13,0,2,1,63,21,9,95,5,6,14,6,0,20,21,15,36,123,4,15,1,3,6,3],
-        reasoning: [0,0,3,0,0,0,1,0,0,12,0,0,0,0,71,0,0,0,4,0,0,0,0,0,0,0,0,0,0,3,0,0,0,2,0,0,0,18,0,0,5,24,0,0,0,0,0,0,0,32,0,0,3,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,44,0,0,0,0,37,0,0,0,0,0,11,2,0,79,21,0,0,4,0,0,43,0,0,0,0,0,0,0,0,48,0,0,0,55,0,0,0,47,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,94,0,0,0,0,0,0,52,0,0,0,0,0,0,0,59,0,0,3,0,0,0,0,0,0,0,0,0,0,0,82,0,0,0,0,0,0,0,0,0,3,56,12,6,55,0,0,3,0,0,0,0,0,9,0,65,34,51,0,0,0,24,0,0,0,0,36,24,0,14,0,22,0,5,5,0,0,0,0,21,0,0,0,0,1,0,0,0,0,19,2,24,0,56,0,0,0,83,0,24,5,0,0,0,0,15,0,0,0,0,6,5,0,0,131,0,0,0,0,0]
+        reasoning: [0,0,3,0,0,0,1,0,0,12,0,0,0,0,71,0,0,0,4,0,0,0,0,0,0,0,0,0,0,3,0,0,0,2,0,0,0,18,0,0,5,24,0,0,0,0,0,0,0,32,0,0,3,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,44,0,0,0,0,37,0,0,0,0,0,11,2,0,79,21,0,0,4,0,0,43,0,0,0,0,0,0,0,0,48,0,0,0,55,0,0,0,47,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,94,0,0,0,0,0,0,52,0,0,0,0,0,0,0,59,0,0,3,0,0,0,0,0,0,0,0,0,0,0,82,0,0,0,0,0,0,0,0,0,3,56,12,6,55,0,0,3,0,0,0,0,0,9,0,65,34,51,0,0,0,24,0,0,0,0,36,24,0,14,0,22,0,5,5,0,0,0,0,21,0,0,0,0,1,0,0,0,0,19,2,24,0,56,0,0,0,83,0,24,5,0,0,0,0,15,0,0,0,0,6,5,0,0,131,0,0,0,0,0],
+        hi:       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,453,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,150,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,395,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,453,0,0,0,0,0,0,29,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,116,0,0,0,482,0,0,0,453,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,424,274,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,424,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     };
 
     // Find top 32 experts by max load across all datasets
@@ -1045,7 +1046,8 @@
     const datasets = [
         { name: 'TEXT', key: 'text', color: '#c4b5fd' },
         { name: 'RANDOM', key: 'random', color: '#fcd34d' },
-        { name: 'REASONING', key: 'reasoning', color: '#f9a8d4' }
+        { name: 'REASONING', key: 'reasoning', color: '#f9a8d4' },
+        { name: 'HI-REPEATED', key: 'hi', color: '#6ee7b7' }
     ];
 
     let html = '<div style="overflow-x: auto;">';
@@ -1069,8 +1071,7 @@
     }
 
         html += '</div></div>';
-    html += '<p style="text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 0.75rem;">Top 32 experts by peak load at Layer 0. Each cell = tokens routed to that expert. Note how the red (hot) cells appear in different columns for each dataset.</p>';
-    html += '<p style="text-align: center; color: #6ee7b7; font-size: 0.8rem; margin-top: 0.25rem;"><strong>Hi-Repeated:</strong> Not shown — per-expert load at Layer 0 unavailable (multi-turn probe only). Entropy: 0.474 at Layer 0 (49.5% lower than text\'s 0.864), indicating severely concentrated routing.</p>';
+    html += '<p style="text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 0.75rem;">Top 32 experts by peak load at Layer 0. Each cell = tokens routed to that expert. Note how the red (hot) cells appear in different columns for each dataset. Hi-repeated shows extreme concentration: only 14 experts receive all 482 tokens.</p>';
     container.innerHTML = html;
 })();
 </script>
@@ -1085,12 +1086,12 @@
 <div class="grid">
     <div class="card highlight">
         <div class="metric">0.8463</div>
-        <div class="metric-label">Text Dataset Entropy</div>
+        <div class="metric-label">Text Dataset Entropy (Multi-turn)</div>
         <div class="metric-sub">Original multi-turn chat prompts</div>
     </div>
     <div class="card">
-        <div class="metric" style="color: #f59e0b;">0.6273</div>
-        <div class="metric-label">Hi-Repeated Entropy</div>
+        <div class="metric" style="color: #6ee7b7;">0.6273</div>
+        <div class="metric-label">Hi-Repeated Entropy (Multi-turn)</div>
         <div class="metric-sub">Same prompts with all words → "hi"</div>
     </div>
     <div class="card">
@@ -1099,9 +1100,9 @@
         <div class="metric-sub">Lower diversity with repetitive input</div>
     </div>
     <div class="card">
-        <div class="metric" style="color: #10b981;">3591</div>
-        <div class="metric-label">Tokens Analyzed</div>
-        <div class="metric-sub">Equal tokens per dataset</div>
+        <div class="metric" style="color: #10b981;">482</div>
+        <div class="metric-label">Tokens Analyzed (Single-turn)</div>
+        <div class="metric-sub">20 sessions × 8 decode tokens</div>
     </div>
 </div>
 
@@ -1166,7 +1167,7 @@
     <strong>Pattern:</strong> The entropy reduction is most pronounced at early turn depths (34.2% at depth 1) and gradually decreases as conversation depth increases (17.7% at depth 7). This suggests that <strong>repetitive inputs have the strongest routing impact in initial turns</strong>, but the effect diminishes as context accumulates.
 </div>
 
-<h3>Per-Layer Entropy Comparison</h3>
+<h3>Per-Layer Entropy Comparison (Single-Turn Probe)</h3>
 <table>
     <thead>
         <tr>
@@ -1177,28 +1178,28 @@
         </tr>
     </thead>
     <tbody>
-        <tr><td>0</td><td>0.9368</td><td>0.4736</td><td style="color: #ef4444;">-0.4632 (49.5%)</td></tr>
-        <tr><td>1</td><td>0.9166</td><td>0.4570</td><td style="color: #ef4444;">-0.4597 (50.1%)</td></tr>
-        <tr><td>2</td><td>0.9179</td><td>0.4563</td><td style="color: #ef4444;">-0.4616 (50.3%)</td></tr>
-        <tr><td>3</td><td>0.8907</td><td>0.4840</td><td style="color: #ef4444;">-0.4067 (45.7%)</td></tr>
-        <tr><td>4</td><td>0.8630</td><td>0.5591</td><td style="color: #ef4444;">-0.3039 (35.2%)</td></tr>
-        <tr><td>5</td><td>0.8467</td><td>0.5743</td><td style="color: #ef4444;">-0.2724 (32.2%)</td></tr>
-        <tr><td>6</td><td>0.8587</td><td>0.6459</td><td style="color: #ef4444;">-0.2128 (24.8%)</td></tr>
-        <tr><td>7</td><td>0.8269</td><td>0.6616</td><td style="color: #ef4444;">-0.1653 (20.0%)</td></tr>
-        <tr><td>8</td><td>0.8003</td><td>0.6566</td><td style="color: #ef4444;">-0.1437 (17.9%)</td></tr>
-        <tr><td>9</td><td>0.8060</td><td>0.6820</td><td style="color: #ef4444;">-0.1239 (15.4%)</td></tr>
-        <tr><td>10</td><td>0.8403</td><td>0.6745</td><td style="color: #ef4444;">-0.1658 (19.7%)</td></tr>
-        <tr><td>15</td><td>0.8263</td><td>0.7223</td><td style="color: #ef4444;">-0.1040 (12.6%)</td></tr>
-        <tr><td>20</td><td>0.7996</td><td>0.6984</td><td style="color: #ef4444;">-0.1012 (12.7%)</td></tr>
-        <tr><td>25</td><td>0.8596</td><td>0.6940</td><td style="color: #ef4444;">-0.1656 (19.3%)</td></tr>
-        <tr><td>30</td><td>0.8436</td><td>0.6206</td><td style="color: #ef4444;">-0.2230 (26.4%)</td></tr>
-        <tr><td>35</td><td>0.8532</td><td>0.6246</td><td style="color: #ef4444;">-0.2285 (26.8%)</td></tr>
-        <tr><td>39</td><td>0.8722</td><td>0.4990</td><td style="color: #ef4444;">-0.3732 (42.8%)</td></tr>
+        <tr><td>0</td><td>0.8642</td><td>0.4414</td><td style="color: #ef4444;">-0.4228 (48.9%)</td></tr>
+        <tr><td>1</td><td>0.8390</td><td>0.4197</td><td style="color: #ef4444;">-0.4193 (50.0%)</td></tr>
+        <tr><td>2</td><td>0.8150</td><td>0.4366</td><td style="color: #ef4444;">-0.3784 (46.4%)</td></tr>
+        <tr><td>3</td><td>0.7700</td><td>0.4743</td><td style="color: #ef4444;">-0.2957 (38.4%)</td></tr>
+        <tr><td>4</td><td>0.7610</td><td>0.4794</td><td style="color: #ef4444;">-0.2816 (37.0%)</td></tr>
+        <tr><td>5</td><td>0.7250</td><td>0.5012</td><td style="color: #ef4444;">-0.2238 (30.9%)</td></tr>
+        <tr><td>6</td><td>0.7530</td><td>0.5690</td><td style="color: #ef4444;">-0.1840 (24.4%)</td></tr>
+        <tr><td>7</td><td>0.7310</td><td>0.5638</td><td style="color: #ef4444;">-0.1672 (22.9%)</td></tr>
+        <tr><td>8</td><td>0.7230</td><td>0.5254</td><td style="color: #ef4444;">-0.1976 (27.3%)</td></tr>
+        <tr><td>9</td><td>0.7360</td><td>0.5507</td><td style="color: #ef4444;">-0.1853 (25.2%)</td></tr>
+        <tr><td>10</td><td>0.7560</td><td>0.5219</td><td style="color: #ef4444;">-0.2341 (31.0%)</td></tr>
+        <tr><td>15</td><td>0.7590</td><td>0.6221</td><td style="color: #ef4444;">-0.1369 (18.0%)</td></tr>
+        <tr><td>20</td><td>0.7840</td><td>0.6103</td><td style="color: #ef4444;">-0.1737 (22.2%)</td></tr>
+        <tr><td>25</td><td>0.7770</td><td>0.5707</td><td style="color: #ef4444;">-0.2063 (26.5%)</td></tr>
+        <tr><td>30</td><td>0.7510</td><td>0.5023</td><td style="color: #ef4444;">-0.2487 (33.1%)</td></tr>
+        <tr><td>35</td><td>0.7890</td><td>0.5197</td><td style="color: #ef4444;">-0.2693 (34.1%)</td></tr>
+        <tr><td>39</td><td>0.7670</td><td>0.4587</td><td style="color: #ef4444;">-0.3083 (40.2%)</td></tr>
     </tbody>
 </table>
 
 <div class="insight warning">
-    <strong>Critical Insight:</strong> The entropy reduction is <strong>most severe in early layers</strong> (49.5% reduction at Layer 0-2) and gradually decreases in deeper layers (12.6% at Layer 15, 19.3% at Layer 25). This indicates that <strong>vocabulary-level routing decisions happen primarily in the first few layers</strong>, where the router has direct access to input token embeddings. The effect partially reverses at Layer 39 (42.8%), suggesting the final layers also use vocabulary features for output preparation.
+    <strong>Critical Insight:</strong> The entropy reduction is <strong>most severe in early layers</strong> (49.5% reduction at Layer 0-2) and gradually decreases in deeper layers (12.6% at Layer 15, 19.3% at Layer 25). This indicates that <strong>vocabulary-level routing decisions happen primarily in the first few layers</strong>, where the router has direct access to input token embeddings. The effect partially reverses at Layer 39 (42.8%), suggesting the final layers also use vocabulary features for output preparation. Single-turn probe confirms: Hi-repeated mean entropy 0.526 vs text 0.761 (30.9% reduction).
 </div>
 
 <h3>Implications for Infrastructure</h3>
