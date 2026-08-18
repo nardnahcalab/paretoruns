@@ -521,8 +521,17 @@
 
     <h3>Expert Load Distribution: Layer 0 Histograms</h3>
     <div class="diagram-container">
-        <p style="color: #94a3b8; margin-bottom: 1rem;">Token count per expert at Layer 0. Each bar = one expert. Height = tokens received. Shows how concentrated (few tall bars) or spread (many short bars) the routing is.</p>
+        <p style="color: #94a3b8; margin-bottom: 1rem;">Token count per expert at Layer 0 — the <strong>first MoE layer</strong> in the 40-layer model. Each bar = one expert (0-255). Height = tokens received. Colors: red = hot (>50% max load), yellow = warm (20-50%), dataset color = cold (<20%).</p>
+        
+        <div class="insight" style="margin-bottom: 1rem;">
+            <strong>What is Layer 0?</strong> Qwen3.6 has 40 MoE layers (layers 0-39). Layer 0 is where the router first sees raw token embeddings — its decisions are driven by <strong>vocabulary patterns</strong> (word shapes, token IDs). Deeper layers process semantic features, so routing changes. The per-layer entropy table below shows this: Layer 0 entropy is 0.864 for text but drops to 0.725 at Layer 5, then rises again. Each layer has its own routing pattern.
+        </div>
+
         <div id="histogram-container"></div>
+
+        <div class="insight" style="margin-top: 1rem;">
+            <strong>Why this matters:</strong> In Expert Parallelism (multi-GPU), each layer's routing determines GPU utilization. Layer 0's extreme hi-repeated concentration (14/256 experts) means early-layer compute is severely imbalanced — while later layers may be more balanced. EP must provision for the worst-case layer, not the average.
+        </div>
     </div>
 
     <h3>Top-8 Expert Overlap: Venn Diagram</h3>
@@ -1246,7 +1255,7 @@
 
     html += '</div>';
 
-    html += '<p style="text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 1rem;">Each bar = one expert (0-255). Height = tokens received at Layer 0. Text/random/reasoning spread load across 70-100 experts; hi-repeated concentrates on just 14 experts with extreme peaks.</p>';
+    html += '<p style="text-align: center; color: #64748b; font-size: 0.8rem; margin-top: 1rem;">Each bar = one expert (0-255). Height = tokens received at Layer 0. Red bars = hot experts (>50% max load); yellow = warm (20-50%); dataset color = cold (<20%). Text/random/reasoning spread load across 70-100 experts; hi-repeated concentrates on just 14 experts with extreme peaks.</p>';
 
     container.innerHTML = html;
 })();
