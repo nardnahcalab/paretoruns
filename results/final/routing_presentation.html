@@ -9,7 +9,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; overflow: hidden; height: 100vh; }
 
         /* Slide container */
-        .slide { display: none; width: 100vw; height: 100vh; padding: 3rem 4rem; overflow-y: auto; }
+        .slide { display: none; width: 100vw; height: 100vh; padding: 3rem 4rem 5rem; overflow-y: auto; }
         .slide.active { display: flex; flex-direction: column; }
 
         /* Navigation */
@@ -343,7 +343,7 @@
 <!-- ==================== SLIDE 5: MoE Architecture ==================== -->
 <div class="slide" id="slide-5">
     <h1>MoE Architecture &amp; Routing</h1>
-    <p class="subtitle">How tokens flow through experts in Qwen3.6-35B-A3B</p>
+    <p class="subtitle">How tokens flow through experts &mdash; and why routing differs during prefill vs decode</p>
 
     <div class="diagram">
         <p style="color: #94a3b8; margin-bottom: 1rem; text-align: center;">Each token passes through a router (gate) that selects the top-8 experts from 256. Only selected experts process the token.</p>
@@ -382,6 +382,78 @@
         <div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.75rem; font-size: 0.8rem; color: #94a3b8;">
             <span><span style="display: inline-block; width: 12px; height: 12px; background: #ef4444; border-radius: 3px; vertical-align: middle;"></span> Selected (active)</span>
             <span><span style="display: inline-block; width: 12px; height: 12px; background: #1e293b; border: 1px solid #334155; border-radius: 3px; vertical-align: middle;"></span> Not selected (idle)</span>
+        </div>
+    </div>
+
+    <!-- Prefill vs Decode Diagram -->
+    <div class="two-col" style="margin-top: 1rem;">
+        <div class="diagram" style="border-color: #3b82f6;">
+            <h3 style="color: #3b82f6; text-align: center; margin-bottom: 0.75rem;">Prefill: Process All Input Tokens</h3>
+            <p class="small" style="text-align: center; margin-bottom: 0.75rem;">All tokens in the prompt are routed <strong>in parallel</strong>. Each token picks its own top-8 experts.</p>
+            <div style="background: #0f172a; border-radius: 8px; padding: 0.75rem;">
+                <!-- Prompt tokens -->
+                <div style="display: flex; gap: 4px; justify-content: center; margin-bottom: 0.5rem;">
+                    <div style="background: #1e3a5f; border: 1px solid #3b82f6; border-radius: 4px; padding: 0.3rem 0.5rem; font-size: 0.75rem; font-weight: 600; color: #93c5fd;">"How"</div>
+                    <div style="background: #1e3a5f; border: 1px solid #3b82f6; border-radius: 4px; padding: 0.3rem 0.5rem; font-size: 0.75rem; font-weight: 600; color: #93c5fd;">"can"</div>
+                    <div style="background: #1e3a5f; border: 1px solid #3b82f6; border-radius: 4px; padding: 0.3rem 0.5rem; font-size: 0.75rem; font-weight: 600; color: #93c5fd;">"I"</div>
+                    <div style="background: #1e3a5f; border: 1px solid #3b82f6; border-radius: 4px; padding: 0.3rem 0.5rem; font-size: 0.75rem; font-weight: 600; color: #93c5fd;">"improve"</div>
+                    <div style="background: #1e3a5f; border: 1px solid #3b82f6; border-radius: 4px; padding: 0.3rem 0.5rem; font-size: 0.75rem; font-weight: 600; color: #93c5fd;">"my"</div>
+                    <div style="background: #1e3a5f; border: 1px solid #3b82f6; border-radius: 4px; padding: 0.3rem 0.5rem; font-size: 0.75rem; font-weight: 600; color: #93c5fd;">"sleep"</div>
+                </div>
+                <!-- Arrows down -->
+                <div style="display: flex; gap: 4px; justify-content: center; margin-bottom: 0.3rem;">
+                    <span style="color: #64748b; font-size: 0.6rem;">&darr;</span>
+                    <span style="color: #64748b; font-size: 0.6rem;">&darr;</span>
+                    <span style="color: #64748b; font-size: 0.6rem;">&darr;</span>
+                    <span style="color: #64748b; font-size: 0.6rem;">&darr;</span>
+                    <span style="color: #64748b; font-size: 0.6rem;">&darr;</span>
+                    <span style="color: #64748b; font-size: 0.6rem;">&darr;</span>
+                </div>
+                <!-- Each token routes to different experts -->
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; text-align: center;">
+                    <div><div style="font-size: 0.55rem; color: #64748b;">"How"</div><div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;"><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">12</span><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">45</span><span style="background: #f59e0b; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">87</span><span style="background: #1e3a5f; color: #94a3b8; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">...</span></div></div>
+                    <div><div style="font-size: 0.55rem; color: #64748b;">"can"</div><div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;"><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">3</span><span style="background: #f59e0b; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">67</span><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">198</span><span style="background: #1e3a5f; color: #94a3b8; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">...</span></div></div>
+                    <div><div style="font-size: 0.55rem; color: #64748b;">"I"</div><div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;"><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">8</span><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">22</span><span style="background: #1e3a5f; color: #94a3b8; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">...</span><span style="background: #1e3a5f; color: #94a3b8; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">...</span></div></div>
+                    <div><div style="font-size: 0.55rem; color: #64748b;">"improve"</div><div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;"><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">15</span><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">92</span><span style="background: #f59e0b; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">201</span><span style="background: #1e3a5f; color: #94a3b8; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">...</span></div></div>
+                    <div><div style="font-size: 0.55rem; color: #64748b;">"my"</div><div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;"><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">3</span><span style="background: #f59e0b; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">45</span><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">112</span><span style="background: #1e3a5f; color: #94a3b8; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">...</span></div></div>
+                    <div><div style="font-size: 0.55rem; color: #64748b;">"sleep"</div><div style="display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;"><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">28</span><span style="background: #ef4444; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">71</span><span style="background: #f59e0b; color: #fff; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">156</span><span style="background: #1e3a5f; color: #94a3b8; font-size: 0.5rem; padding: 1px 3px; border-radius: 2px;">...</span></div></div>
+                </div>
+                <p style="text-align: center; color: #64748b; font-size: 0.65rem; margin-top: 0.5rem;">Each token &rarr; different top-8 experts (shown: selected expert IDs). <strong style="color: #3b82f6;">6 tokens &times; 8 experts = 48 expert loads</strong> across 256 experts.</p>
+            </div>
+            <div class="insight" style="margin-top: 0.75rem; font-size: 0.85rem;">
+                <strong>Prefill parallelism:</strong> All input tokens are processed simultaneously. The router assigns each token to its own expert subset. This is compute-bound &mdash; experts process token batches efficiently.
+            </div>
+        </div>
+
+        <div class="diagram" style="border-color: #f59e0b;">
+            <h3 style="color: #f59e0b; text-align: center; margin-bottom: 0.75rem;">Decode: Generate One Token at a Time</h3>
+            <p class="small" style="text-align: center; margin-bottom: 0.75rem;">Each new output token triggers a <strong>full forward pass</strong> through all 40 MoE layers. The router picks experts for <strong>this token only</strong>.</p>
+            <div style="background: #0f172a; border-radius: 8px; padding: 0.75rem;">
+                <!-- Step 1: Generated token -->
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <div style="background: #f59e0b; color: #0f172a; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">Step 1</div>
+                    <div style="font-size: 0.75rem; color: #cbd5e1;">Last generated token: <strong style="color: #fcd34d;">"quality"</strong></div>
+                </div>
+                <!-- Step 2: Router picks experts -->
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <div style="background: #a78bfa; color: #0f172a; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">Step 2</div>
+                    <div style="font-size: 0.75rem; color: #cbd5e1;">Router selects: <span style="color: #ef4444; font-weight: 600;">E12, E45, E87, E92, E103, E156, E201, E245</span></div>
+                </div>
+                <!-- Step 3: Expert computation -->
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                    <div style="background: #10b981; color: #0f172a; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">Step 3</div>
+                    <div style="font-size: 0.75rem; color: #cbd5e1;">8 experts compute, outputs weighted &rarr; next token logits</div>
+                </div>
+                <!-- Step 4: Repeat -->
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <div style="background: #ef4444; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px;">Repeat</div>
+                    <div style="font-size: 0.75rem; color: #cbd5e1;">Next token: <strong style="color: #fcd34d;">"?"</strong> &rarr; new routing decision &rarr; new 8 experts</div>
+                </div>
+                <p style="text-align: center; color: #64748b; font-size: 0.65rem; margin-top: 0.5rem;"><strong style="color: #f59e0b;">Each decode step = 1 token &rarr; 40 MoE layers &rarr; 80 all-to-all collectives (in EP).</strong> Routing decisions change per token.</p>
+            </div>
+            <div class="insight" style="margin-top: 0.75rem; font-size: 0.85rem;">
+                <strong>Decode is memory-bound:</strong> Each token requires loading expert weights from HBM. The <strong>KV cache grows</strong> with each token. Hot experts create bottlenecks &mdash; all GPUs wait for the busiest one.
+            </div>
         </div>
     </div>
 
@@ -772,7 +844,7 @@ document.addEventListener('keydown', function(e) {
 document.getElementById('prevBtn').disabled = true;
 document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
 
-// Generate heatmap
+// Generate heatmap - all 256 experts
 (function() {
     const container = document.getElementById('heatmap-container');
     if (!container) return;
@@ -782,10 +854,7 @@ document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
         reasoning: [0,0,3,0,0,0,1,0,0,12,0,0,0,0,71,0,0,0,4,0,0,0,0,0,0,0,0,0,0,3,0,0,0,2,0,0,0,18,0,0,5,24,0,0,0,0,0,0,0,32,0,0,3,0,0,0,0,0,0,14,0,0,0,0,0,0,0,0,0,44,0,0,0,0,37,0,0,0,0,0,11,2,0,79,21,0,0,4,0,0,43,0,0,0,0,0,0,0,0,48,0,0,0,55,0,0,0,47,33,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,94,0,0,0,0,0,0,52,0,0,0,0,0,0,0,59,0,0,3,0,0,0,0,0,0,0,0,0,0,0,82,0,0,0,0,0,0,0,0,0,3,56,12,6,55,0,0,3,0,0,0,0,0,9,0,65,34,51,0,0,0,24,0,0,0,0,36,24,0,14,0,22,0,5,5,0,0,0,0,21,0,0,0,0,1,0,0,0,0,19,2,24,0,56,0,0,0,83,0,24,5,0,0,0,0,15,0,0,0,0,6,5,0,0,131,0,0,0,0,0],
         hi:       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,453,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,150,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,395,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,453,0,0,0,0,0,0,29,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,116,0,0,0,482,0,0,0,453,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,424,274,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,424,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,29,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     };
-    const maxLoad = new Array(256).fill(0);
-    for (const ds of Object.values(data)) { for (let i = 0; i < ds.length; i++) { maxLoad[i] = Math.max(maxLoad[i], ds[i]); } }
-    const topExperts = Array.from({length: 256}, (_, i) => i).sort((a, b) => maxLoad[b] - maxLoad[a]).slice(0, 32);
-    const allMax = Math.max(...maxLoad);
+    const allMax = Math.max(...Object.values(data).flat());
     function getColor(val) {
         if (val === 0) return '#0f172a';
         const norm = val / allMax;
@@ -794,20 +863,43 @@ document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
         return `rgba(30, 58, 95, ${0.3 + norm * 0.7})`;
     }
     const datasets = [{name:'TEXT',key:'text',color:'#c4b5fd'},{name:'RANDOM',key:'random',color:'#fcd34d'},{name:'REASONING',key:'reasoning',color:'#f9a8d4'},{name:'HI-REPEATED',key:'hi',color:'#6ee7b7'}];
-    let html = '<div style="overflow-x: auto;"><div style="min-width: 600px;">';
-    html += '<div class="heatmap-row"><div class="heatmap-label"></div>';
-    for (const e of topExperts) { html += `<div style="width: 18px; text-align: center; font-size: 0.5rem; color: #64748b; transform: rotate(-45deg); transform-origin: center; margin-bottom: 6px;">E${e}</div>`; }
+    // Show all 256 experts in a grid layout
+    let html = '<div style="overflow-x: auto;"><div style="min-width: 500px;">';
+    // Expert number labels at top
+    html += '<div style="display: flex; gap: 0; margin-bottom: 2px;"><div style="width: 70px;"></div>';
+    for (let i = 0; i < 256; i++) {
+        html += `<div style="width: 4px; text-align: center;"></div>`;
+    }
     html += '</div>';
+    // Each dataset row
     for (const ds of datasets) {
-        html += `<div class="heatmap-row"><div class="heatmap-label" style="color: ${ds.color};">${ds.name}</div>`;
-        for (const e of topExperts) {
-            const val = data[ds.key][e];
-            html += `<div style="width: 18px; height: 18px; border-radius: 2px; background: ${getColor(val)}; display: flex; align-items: center; justify-content: center; font-size: 0.45rem; color: ${val > allMax * 0.2 ? '#fff' : '#64748b'};" title="Expert ${e}: ${val} tokens">${val > 0 ? val : ''}</div>`;
+        html += `<div style="display: flex; gap: 0; align-items: center; margin: 1px 0;"><div style="width: 70px; font-size: 0.65rem; color: ${ds.color}; text-align: right; padding-right: 4px; font-weight: 600;">${ds.name}</div>`;
+        for (let i = 0; i < 256; i++) {
+            const val = data[ds.key][i];
+            const cellColor = getColor(val);
+            html += `<div style="width: 4px; height: 12px; background: ${cellColor}; border-radius: 1px;" title="E${i}: ${val} tokens"></div>`;
         }
         html += '</div>';
     }
+    // Expert number scale at bottom
+    html += '<div style="display: flex; gap: 0; margin-top: 4px;"><div style="width: 70px;"></div>';
+    for (let i = 0; i < 256; i++) {
+        if (i % 32 === 0) {
+            html += `<div style="width: 4px; text-align: center; font-size: 0.5rem; color: #64748b;">${i}</div>`;
+        } else {
+            html += `<div style="width: 4px;"></div>`;
+        }
+    }
+    html += '</div>';
     html += '</div></div>';
-    html += '<p style="text-align: center; color: #64748b; font-size: 0.75rem; margin-top: 0.5rem;">Top 32 experts by peak load at Layer 0. Note how red (hot) cells appear in different columns for each dataset. Hi-repeated: only 14 experts receive all 482 tokens.</p>';
+    // Legend
+    html += '<div style="display: flex; justify-content: center; gap: 1.5rem; margin-top: 0.5rem; font-size: 0.7rem; color: #94a3b8;">';
+    html += '<span><span style="display: inline-block; width: 10px; height: 10px; background: rgba(239,68,68,0.8); border-radius: 2px; vertical-align: middle;"></span> High (&gt;30% max)</span>';
+    html += '<span><span style="display: inline-block; width: 10px; height: 10px; background: rgba(245,158,11,0.7); border-radius: 2px; vertical-align: middle;"></span> Medium (10-30%)</span>';
+    html += '<span><span style="display: inline-block; width: 10px; height: 10px; background: rgba(30,58,95,0.6); border-radius: 2px; vertical-align: middle;"></span> Low (1-10%)</span>';
+    html += '<span><span style="display: inline-block; width: 10px; height: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 2px; vertical-align: middle;"></span> No tokens</span>';
+    html += '</div>';
+    html += '<p style="text-align: center; color: #64748b; font-size: 0.7rem; margin-top: 0.5rem;">All 256 experts at Layer 0. Each column = one expert (E0-E255). Note how hot (red) cells appear in different positions for each dataset. Hi-repeated: only 14 experts receive all 482 tokens.</p>';
     container.innerHTML = html;
 })();
 
