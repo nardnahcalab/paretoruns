@@ -882,9 +882,10 @@ document.getElementById('progress').style.width = (1 / totalSlides * 100) + '%';
         for (let i = 0; i < 256; i++) {
             const val = data[ds.key][i];
             const cellColor = getColor(val);
-            const textColor = val > allMax * 0.25 ? '#fff' : (val > 0 ? '#cbd5e1' : '#334155');
+            const textColor = val > allMax * 0.25 ? '#fff' : '#fcd34d';
             const fontSize = val >= 100 ? '0.4rem' : '0.45rem';
-            html += `<div style="width: ${cellW}px; height: ${cellH}px; background: ${cellColor}; border-radius: 1px; display: flex; align-items: center; justify-content: center; font-size: ${fontSize}; color: ${textColor}; font-weight: 600; font-variant-numeric: tabular-nums;" title="E${i}: ${val} tokens">${val > 0 ? val : ''}</div>`;
+            const showNum = val > allMax * 0.1;
+            html += `<div style="width: ${cellW}px; height: ${cellH}px; background: ${cellColor}; border-radius: 1px; display: flex; align-items: center; justify-content: center; font-size: ${fontSize}; color: ${textColor}; font-weight: 600; font-variant-numeric: tabular-nums;" title="E${i}: ${val} tokens">${showNum ? val : ''}</div>`;
         }
         html += '</div>';
     }
